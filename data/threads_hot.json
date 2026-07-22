@@ -1,1 +1,20 @@
-[]
+[
+  {
+    "title": "Threads 48시간 실시간 '보험' 최신 핫이슈 & 유저 반응 직관 확인",
+    "selling_point": "최근 48시간 동안 Threads에 올라온 전체 보험 관련 글 중 가장 댓글과 좋아요 반응이 뜨거운 실시간 핫이슈 포스트입니다.",
+    "url": "https://www.threads.net/search?q=%EB%B3%B4%ED%97%84",
+    "tag": "#스레드_실시간_보험핫이슈"
+  },
+  {
+    "title": "Threads 48시간 실시간 '보장분석 / 설계사' 현장 소통 & 반응 모음",
+    "selling_point": "온라인 스레드 커뮤니티에서 실시간으로 공유되는 보장분석 노하우 및 고객 소통 대화 핫 트렌드입니다.",
+    "url": "https://www.threads.net/search?q=%EB%B3%B4%EC%95%A5%EB%B6%84%EC%84%9D",
+    "tag": "#스레드_실시간_보장분석"
+  },
+  {
+    "title": "Threads 48시간 실시간 '보험금 청구 / 갱신' 유저 솔직 후기 및 질문",
+    "selling_point": "고객들이 실시간으로 스레드에 작성한 보험료 갱신 및 청구 관련 실제 문의와 댓글 이슈입니다.",
+    "url": "https://www.threads.net/search?q=%EB%B3%B4%ED%97%84%EA%B8%88",
+    "tag": "#스레드_실시간_고객반응"
+  }
+]
