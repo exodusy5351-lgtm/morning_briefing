@@ -523,14 +523,16 @@ def get_gemini_api_key():
         try:
             with open(env_file, "r", encoding="utf-8") as f:
                 for line in f:
-                    if line.strip().startswith("GEMINI_API_KEY="):
-                        k = line.strip().split("=", 1)[1].strip().strip('"').strip("'")
-                        if k:
-                            os.environ["GEMINI_API_KEY"] = k
-                            return k
+                    line = line.strip()
+                    if "=" in line and not line.startswith("#"):
+                        k, v = line.split("=", 1)
+                        k = k.strip()
+                        v = v.strip().strip('"').strip("'")
+                        if k and v and k not in os.environ:
+                            os.environ[k] = v
         except Exception:
             pass
-    return None
+    return os.environ.get("GEMINI_API_KEY")
 
 
 # Gemini API 및 수집 통계 트래킹 객체
