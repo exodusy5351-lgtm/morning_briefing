@@ -2130,15 +2130,15 @@ def build_html_card_news(data, today_str, mail_text, notion_url=None):
             --glow: rgba(96, 165, 250, 0.15);
         }
 
-        * {{
+        * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
             font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
             transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
-        }}
+        }
 
-        body {{
+        body {
             background-color: var(--bg-body);
             color: var(--text-main);
             min-height: 100vh;
@@ -2146,14 +2146,14 @@ def build_html_card_news(data, today_str, mail_text, notion_url=None):
             display: flex;
             flex-direction: column;
             align-items: center;
-        }}
+        }
 
-        .container {{
+        .container {
             width: 100%;
             max-width: 1200px;
-        }}
+        }
 
-        header {{
+        header {
             background: var(--bg-glass);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
@@ -2165,32 +2165,32 @@ def build_html_card_news(data, today_str, mail_text, notion_url=None):
             justify-content: space-between;
             align-items: center;
             box-shadow: var(--shadow-md);
-        }}
+        }
 
-        .brand h1 {{
+        .brand h1 {
             font-size: 1.6rem;
             font-weight: 800;
             background: linear-gradient(135deg, var(--accent-primary) 0%, #a78bfa 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 0.4rem;
-        }}
+        }
 
-        .brand p {{
+        .brand p {
             color: var(--text-sub);
             font-size: 0.9rem;
             display: flex;
             align-items: center;
             gap: 6px;
-        }}
+        }
 
-        .header-actions {{
+        .header-actions {
             display: flex;
             align-items: center;
             gap: 10px;
-        }}
+        }
 
-        .btn {{
+        .btn {
             background: var(--bg-card);
             border: 1px solid var(--border-color);
             color: var(--text-main);
@@ -2203,43 +2203,43 @@ def build_html_card_news(data, today_str, mail_text, notion_url=None):
             font-size: 0.85rem;
             font-weight: 600;
             box-shadow: var(--shadow-sm);
-        }}
+        }
 
-        .btn:hover {{
+        .btn:hover {
             background: var(--border-color);
             transform: translateY(-2px);
-        }}
+        }
 
-        .btn-primary {{
+        .btn-primary {
             background: var(--accent-primary);
             color: #ffffff;
             border: none;
-        }}
+        }
 
-        .btn-primary:hover {{
+        .btn-primary:hover {
             background: var(--accent-primary-hover);
             color: #ffffff;
             box-shadow: 0 0 15px var(--glow);
-        }}
+        }
 
-        .tabs-container {{
+        .tabs-container {
             margin-bottom: 1.5rem;
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
             padding-bottom: 8px;
-        }}
+        }
         
-        .tabs-container::-webkit-scrollbar {{
+        .tabs-container::-webkit-scrollbar {
             display: none; /* 크롬, 사파리 등 모바일 브라우저 스크롤바 숨김 */
-        }}
+        }
 
-        .tabs {{
+        .tabs {
             display: flex;
             gap: 8px;
             white-space: nowrap;
-        }}
+        }
 
-        .tab-btn {{
+        .tab-btn {
             background: var(--bg-card);
             border: 1px solid var(--border-color);
             color: var(--text-sub);
@@ -2249,28 +2249,28 @@ def build_html_card_news(data, today_str, mail_text, notion_url=None):
             font-size: 0.9rem;
             font-weight: 600;
             box-shadow: var(--shadow-sm);
-        }}
+        }
 
-        .tab-btn:hover {{
+        .tab-btn:hover {
             color: var(--text-main);
             border-color: var(--text-muted);
-        }}
+        }
 
-        .tab-btn.active {{
+        .tab-btn.active {
             background: var(--accent-primary);
             color: #ffffff;
             border-color: var(--accent-primary);
             box-shadow: 0 4px 12px var(--glow);
-        }}
+        }
 
-        .grid {{
+        .grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
             gap: 1.25rem;
             width: 100%;
-        }}
+        }
 
-        .card {{
+        .card {
             background: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: 16px;
@@ -2282,9 +2282,9 @@ def build_html_card_news(data, today_str, mail_text, notion_url=None):
             box-shadow: var(--shadow-sm);
             position: relative;
             overflow: hidden;
-        }}
+        }
 
-        .card::before {{
+        .card::before {
             content: '';
             position: absolute;
             top: 0;
@@ -2293,39 +2293,39 @@ def build_html_card_news(data, today_str, mail_text, notion_url=None):
             height: 100%;
             background-color: var(--accent-primary);
             opacity: 0.8;
-        }}
+        }
 
-        .card.youtube-card::before {{
+        .card.youtube-card::before {
             background-color: var(--yt-color);
-        }}
+        }
 
-        .card:hover {{
+        .card:hover {
             transform: translateY(-5px);
             box-shadow: var(--shadow-lg);
             border-color: var(--accent-primary);
-        }}
+        }
 
-        .card.youtube-card:hover {{
+        .card.youtube-card:hover {
             border-color: var(--yt-color);
             box-shadow: 0 8px 20px var(--yt-glow);
-        }}
+        }
 
-        .card-header {{
+        .card-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 1rem;
-        }}
+        }
 
-        .badge {{
+        .badge {
             font-size: 0.75rem;
             font-weight: 700;
             padding: 4px 10px;
             border-radius: 6px;
-        }}
+        }
 
         /* 기사 하단 2~3줄 현장 화법 카드 */
-        .sales-hook-card {{
+        .sales-hook-card {
             background-color: #f0fdf4;
             border-left: 4px solid #16a34a;
             border-radius: 8px;
@@ -2333,15 +2333,15 @@ def build_html_card_news(data, today_str, mail_text, notion_url=None):
             margin-top: 14px;
             margin-bottom: 12px;
             box-shadow: 0 2px 8px rgba(22, 163, 74, 0.06);
-        }}
+        }
 
-        [data-theme="dark"] .sales-hook-card {{
+        [data-theme="dark"] .sales-hook-card {
             background-color: rgba(22, 163, 74, 0.12);
             border-left: 4px solid #34d399;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-        }}
+        }
 
-        .sales-hook-card .hook-badge {{
+        .sales-hook-card .hook-badge {
             display: inline-flex;
             align-items: center;
             gap: 5px;
@@ -2352,33 +2352,33 @@ def build_html_card_news(data, today_str, mail_text, notion_url=None):
             padding: 3px 8px;
             border-radius: 10px;
             margin-bottom: 8px;
-        }}
+        }
 
-        [data-theme="dark"] .sales-hook-card .hook-badge {{
+        [data-theme="dark"] .sales-hook-card .hook-badge {
             background-color: rgba(52, 211, 153, 0.2);
             color: #6ee7b7;
-        }}
+        }
 
-        .sales-hook-card .hook-text {{
+        .sales-hook-card .hook-text {
             font-size: 14px;
             color: #166534;
             font-weight: 500;
             line-height: 1.5;
             margin: 0;
             word-break: keep-all;
-        }}
+        }
 
-        [data-theme="dark"] .sales-hook-card .hook-text {{
+        [data-theme="dark"] .sales-hook-card .hook-text {
             color: #a7f3d0;
-        }}
+        }
 
-        .source-tag {{
+        .source-tag {
             font-size: 0.8rem;
             color: var(--text-muted);
             font-weight: 600;
-        }}
+        }
 
-        .card-title {{
+        .card-title {
             font-size: 1.05rem;
             line-height: 1.5;
             font-weight: 700;
@@ -2390,33 +2390,33 @@ def build_html_card_news(data, today_str, mail_text, notion_url=None):
             overflow: hidden;
             word-break: keep-all;
             flex-grow: 1;
-        }}
+        }
 
-        .card-icon {{
+        .card-icon {
             width: 28px;
             height: 28px;
             flex-shrink: 0;
             margin-top: 2px;
-        }}
+        }
 
-        .card-footer {{
+        .card-footer {
             display: flex;
             justify-content: space-between;
             align-items: center;
             border-top: 1px solid var(--border-color);
             padding-top: 1rem;
             margin-top: auto;
-        }}
+        }
 
-        .card-date {{
+        .card-date {
             font-size: 0.75rem;
             color: var(--text-muted);
             display: flex;
             align-items: center;
             gap: 4px;
-        }}
+        }
 
-        .card-link {{
+        .card-link {
             color: var(--accent-primary);
             text-decoration: none;
             font-size: 0.85rem;
@@ -2424,17 +2424,17 @@ def build_html_card_news(data, today_str, mail_text, notion_url=None):
             display: flex;
             align-items: center;
             gap: 4px;
-        }}
+        }
 
-        .card.youtube-card .card-link {{
+        .card.youtube-card .card-link {
             color: var(--yt-color);
-        }}
+        }
 
-        .card-link:hover {{
+        .card-link:hover {
             text-decoration: underline;
-        }}
+        }
 
-        .no-data {{
+        .no-data {
             grid-column: 1 / -1;
             text-align: center;
             padding: 3rem;
@@ -2443,9 +2443,9 @@ def build_html_card_news(data, today_str, mail_text, notion_url=None):
             background: var(--bg-card);
             border-radius: 16px;
             border: 1px solid var(--border-color);
-        }}
+        }
 
-        .toast {{
+        .toast {
             position: fixed;
             bottom: 2rem;
             left: 50%;
@@ -2459,14 +2459,14 @@ def build_html_card_news(data, today_str, mail_text, notion_url=None):
             opacity: 0;
             z-index: 1000;
             transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
-        }}
+        }
 
-        .toast.show {{
+        .toast.show {
             transform: translateX(-50%) translateY(0);
             opacity: 1;
-        }}
+        }
 
-        footer {{
+        footer {
             margin-top: 3rem;
             text-align: center;
             color: var(--text-muted);
@@ -2474,64 +2474,64 @@ def build_html_card_news(data, today_str, mail_text, notion_url=None):
             padding: 2rem 0;
             border-top: 1px solid var(--border-color);
             width: 100%;
-        }}
+        }
 
-        @media (max-width: 640px) {{
-            body {{
+        @media (max-width: 640px) {
+            body {
                 padding: 1rem 0.5rem;
-            }}
-            header {{
+            }
+            header {
                 padding: 1.25rem 1rem;
                 border-radius: 16px;
                 margin-bottom: 1rem;
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 1.25rem;
-            }}
-            .brand h1 {{
+            }
+            .brand h1 {
                 font-size: 1.35rem;
-            }}
-            .brand p {{
+            }
+            .brand p {
                 font-size: 0.8rem;
-            }}
-            .header-actions {{
+            }
+            .header-actions {
                 width: 100%;
                 flex-direction: row;
                 flex-wrap: wrap;
                 gap: 8px;
-            }}
-            .btn {{
+            }
+            .btn {
                 padding: 8px 12px;
                 font-size: 0.8rem;
                 border-radius: 10px;
                 flex-grow: 1;
                 justify-content: center;
-            }}
-            .tab-btn {{
+            }
+            .tab-btn {
                 padding: 8px 15px;
                 font-size: 0.85rem;
-            }}
-            .grid {{
+            }
+            .grid {
                 grid-template-columns: 1fr;
                 gap: 1rem;
-            }}
-            .card {{
+            }
+            .card {
                 padding: 1.25rem;
                 border-radius: 14px;
-            }}
-            .card-title {{
+            }
+            .card-title {
                 font-size: 0.98rem;
                 margin-bottom: 1rem;
-            }}
-            .insight-banner {{
+            }
+            .insight-banner {
                 padding: 1rem !important;
                 border-radius: 14px !important;
                 margin-bottom: 1rem !important;
-            }}
-            .insight-banner p {{
+            }
+            .insight-banner p {
                 font-size: 0.88rem !important;
-            }}
-        }}
+            }
+        }
     </style>
 </head>
 <body>
@@ -2622,25 +2622,25 @@ def build_html_card_news(data, today_str, mail_text, notion_url=None):
         const savedTheme = localStorage.getItem('theme');
         const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         
-        if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {{
+        if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
             document.body.setAttribute('data-theme', 'dark');
             updateThemeIcon('dark');
-        }} else {{
+        } else {
             document.body.setAttribute('data-theme', 'light');
             updateThemeIcon('light');
-        }}
+        }
 
-        function toggleTheme() {{
+        function toggleTheme() {
             const currentTheme = document.body.getAttribute('data-theme');
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
             document.body.setAttribute('data-theme', newTheme);
             localStorage.setItem('theme', newTheme);
             updateThemeIcon(newTheme);
-        }}
+        }
 
-        function updateThemeIcon(theme) {{
+        function updateThemeIcon(theme) {
             const iconSvg = document.getElementById('theme-icon');
-            if (theme === 'dark') {{
+            if (theme === 'dark') {
                 iconSvg.innerHTML = `
                     <circle cx="12" cy="12" r="5"></circle>
                     <line x1="12" y1="1" x2="12" y2="3"></line>
@@ -2652,14 +2652,14 @@ def build_html_card_news(data, today_str, mail_text, notion_url=None):
                     <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
                     <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
                 `;
-            }} else {{
+            } else {
                 iconSvg.innerHTML = `
                     <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
                 `;
-            }}
-        }}
+            }
+        }
 
-        function filterCategory(category, element) {{
+        function filterCategory(category, element) {
             const tabs = document.querySelectorAll('.tab-btn');
             tabs.forEach(tab => tab.classList.remove('active'));
             if (element) element.classList.add('active');
@@ -2668,38 +2668,38 @@ def build_html_card_news(data, today_str, mail_text, notion_url=None):
             let seasonalCount = 0;
             let taxCount = 0;
 
-            cards.forEach(card => {{
+            cards.forEach(card => {
                 const cardCat = card.getAttribute('data-category');
                 const badge = card.querySelector('.badge');
                 const cardLabel = badge ? badge.innerText.trim() : '';
 
-                if (category === 'all') {{
-                    if (cardCat === 'seasonal_issue') {{
+                if (category === 'all') {
+                    if (cardCat === 'seasonal_issue') {
                         seasonalCount++;
                         card.style.display = (seasonalCount <= 1) ? 'flex' : 'none';
-                    }} else if (cardCat === 'tax_benefit') {{
+                    } else if (cardCat === 'tax_benefit') {
                         taxCount++;
                         card.style.display = (taxCount <= 1) ? 'flex' : 'none';
-                    }} else {{
+                    } else {
                         card.style.display = 'flex';
-                    }}
-                }} else if (category === 'policy' && (cardLabel.includes('제도') || cardLabel.includes('정책') || cardCat === 'silson' || cardCat === 'fss_reform' || cardCat === 'reform_insurance')) {{
+                    }
+                } else if (category === 'policy' && (cardLabel.includes('제도') || cardLabel.includes('정책') || cardCat === 'silson' || cardCat === 'fss_reform' || cardCat === 'reform_insurance')) {
                     card.style.display = 'flex';
-                }} else if (category === 'reality' && (cardLabel.includes('질병') || cardLabel.includes('치료비') || cardCat === 'hospital_cost' || cardCat === 'medtech')) {{
+                } else if (category === 'reality' && (cardLabel.includes('질병') || cardLabel.includes('치료비') || cardCat === 'hospital_cost' || cardCat === 'medtech')) {
                     card.style.display = 'flex';
-                }} else if (category === 'market' && (cardLabel.includes('상품') || cardLabel.includes('시장') || cardCat === 'product_trend')) {{
+                } else if (category === 'market' && (cardLabel.includes('상품') || cardLabel.includes('시장') || cardCat === 'product_trend')) {
                     card.style.display = 'flex';
-                }} else if (category === 'motivation' && (cardLabel.includes('성공') || cardLabel.includes('동기부여') || cardCat === 'motivation')) {{
+                } else if (category === 'motivation' && (cardLabel.includes('성공') || cardLabel.includes('동기부여') || cardCat === 'motivation')) {
                     card.style.display = 'flex';
-                }} else if (cardCat === category) {{
+                } else if (cardCat === category) {
                     card.style.display = 'flex';
-                }} else {{
+                } else {
                     card.style.display = 'none';
-                }}
-            }});
-        }}
+                }
+            });
+        }
 
-        function copyMailText() {{
+        function copyMailText() {
             const mailTextSource = document.getElementById('mail-text-source');
             mailTextSource.style.display = 'block';
             mailTextSource.select();
@@ -2739,21 +2739,27 @@ def build_html_card_news(data, today_str, mail_text, notion_url=None):
                         .replace("$NOTION_BADGE", notion_badge_html)
 
 def build_notion_blocks(data):
-    """Notion API 규격에 맞는 페이지 내 블록 리스트 생성 (유튜브 및 뉴스 핵심 요약 구조화)"""
+    """Notion API 규격에 맞는 페이지 내 블록 리스트 생성.
+    - 동일 라벨 카테고리(예: 제도·정책 이슈 x3)를 하나의 섹션으로 병합
+    - 기사별 callout 블록 (카드형 UI) 복원
+    - YouTube 항목: link를 rich_text inline으로 처리 → 모바일 대형 플레이어 자동임베드 차단
+    """
     insight = generate_daily_insight(data)
     blocks = []
-    
+
+    # ── 인트로 단락 ──────────────────────────────────────────
     blocks.append({
         "object": "block",
         "type": "paragraph",
         "paragraph": {
             "rich_text": [{
                 "type": "text",
-                "text": { "content": "오늘 아침 주요 9대 실전 테마 뉴스 브리핑 및 유튜브 영업 소구점 분석입니다. (제목 클릭 시 링크 이동)" }
+                "text": { "content": "오늘 아침 주요 실전 테마 뉴스 브리핑 및 유튜브 영업 소구점 분석입니다. (제목 클릭 시 링크 이동)" }
             }]
         }
     })
-    
+
+    # ── 오늘의 Market Insight callout ────────────────────────
     blocks.append({
         "object": "block",
         "type": "callout",
@@ -2762,24 +2768,60 @@ def build_notion_blocks(data):
                 "type": "text",
                 "text": { "content": insight }
             }],
-            "icon": {
-                "type": "emoji",
-                "emoji": "💡"
-            },
+            "icon": { "type": "emoji", "emoji": "💡" },
             "color": "blue_background"
         }
     })
-    
+
+    # ── 동일 라벨 카테고리 병합: label 기준으로 items 합산 ──────
+    label_order = []       # CATEGORIES 정의 순서 유지
+    label_items_map = {}   # label → merged item list
+
     for cat_id, info in CATEGORIES.items():
         items = data.get(cat_id, [])
-        
-        # 타이틀 커스텀 슬로건 적용
-        header_text = f"■ {info['label']}"
-        if cat_id == "product_trend":
-            header_text = f"■ {info['label']} (★신설: 타사 신상품/절판 정보 및 삼성화재 상품과의 실전 비교 우위 분석)"
-        elif cat_id == "motivation":
-            header_text = f"■ {info['label']} (★ 오늘의 영업 다짐: \"우리가 전달하는 보장은 고객의 내일을 지키는 가장 가치 있고 숭고한 약속입니다.\")"
-            
+        label = info["label"]
+        if label not in label_items_map:
+            label_items_map[label] = []
+            label_order.append(label)
+        label_items_map[label].extend(items)
+
+    # 카테고리별 이모지 및 callout 색상 매핑
+    label_emoji = {
+        "제도·정책 이슈":          "📋",
+        "질병·치료비 리얼리티":    "💊",
+        "시즌·이슈":               "☀️",
+        "절세·세제":               "💴",
+        "상품·시장 동향":          "📊",
+        "성공·동기부여":           "⭐",
+        "유튜브 핫이슈":           "▶️",
+        "보험 블로그 & 담보 비교": "🔍",
+        "국회청원 (비급여/급여화)":"📜",
+        "스레드 핫이슈":           "🧵",
+    }
+    label_color = {
+        "제도·정책 이슈":          "blue_background",
+        "질병·치료비 리얼리티":    "green_background",
+        "시즌·이슈":               "gray_background",
+        "절세·세제":               "yellow_background",
+        "상품·시장 동향":          "default",
+        "성공·동기부여":           "purple_background",
+        "유튜브 핫이슈":           "red_background",
+        "보험 블로그 & 담보 비교": "default",
+        "국회청원 (비급여/급여화)":"pink_background",
+        "스레드 핫이슈":           "default",
+    }
+
+    # ── 섹션별 블록 생성 (아이템 없는 섹션은 헤더 포함 통째 생략) ──
+    for label in label_order:
+        items = label_items_map[label]
+
+        # 기사 0건 섹션: 헤더 자체를 생성하지 않고 건너뜀
+        if not items:
+            continue
+
+        # 섹션 헤딩: 순수 라벨명만 (괄호 부연설명 제거)
+        header_text = f"■ {label}"
+
         blocks.append({
             "object": "block",
             "type": "heading_2",
@@ -2790,51 +2832,82 @@ def build_notion_blocks(data):
                 }]
             }
         })
-        
-        if not items:
-            blocks.append({
-                "object": "block",
-                "type": "paragraph",
-                "paragraph": {
-                    "rich_text": [{
-                        "type": "text",
-                        "text": { "content": "(조건에 맞는 최신 동향이 발견되지 않았습니다.)" },
-                        "annotations": { "italic": True }
-                    }]
+
+        emoji = label_emoji.get(label, "📰")
+        color = label_color.get(label, "default")
+        is_youtube_section = (label == "유튜브 핫이슈")
+
+        for idx, item in enumerate(items, 1):
+            # ── callout rich_text 구성 ──
+            title_str = f"{idx}. {item['title']}"
+
+            if is_youtube_section:
+                # YouTube: 제목을 plain text로 (link 없음) → Notion 자동 임베드 방지
+                title_rt = {
+                    "type": "text",
+                    "text": { "content": title_str },
+                    "annotations": { "bold": True }
                 }
-            })
-        else:
-            for idx, item in enumerate(items, 1):
-                # 일반 기사 및 유튜브 블록 구성
-                rich_text = [
-                    {
-                        "type": "text",
-                        "text": {
-                            "content": f"{idx}. {item['title']}\n",
-                            "link": { "url": item["link"] }
-                        },
-                        "annotations": { "bold": True }
-                    }
-                ]
-                
-                if cat_id == "youtube":
-                    meta_content = f"   • 채널: {item['source']} | {item.get('view_count_str', '')} | {item['pub_date_str']}"
-                else:
-                    meta_content = f"   • 출처: {item['source']} | 등록일: {item['pub_date_str']}"
-                    
+            else:
+                title_rt = {
+                    "type": "text",
+                    "text": {
+                        "content": title_str,
+                        "link": { "url": item["link"] }
+                    },
+                    "annotations": { "bold": True }
+                }
+
+            rich_text = [title_rt]
+
+            # 영업 인사이트/화법 삽입
+            hook = item.get("insight", "").strip()
+            if hook:
                 rich_text.append({
                     "type": "text",
-                    "text": { "content": meta_content },
-                    "annotations": { "color": "gray" }
+                    "text": { "content": f"\n💡 {hook}" }
                 })
-                    
+
+            # 메타 정보 (출처/채널, 날짜/조회수)
+            if is_youtube_section:
+                meta = f"\n   채널: {item.get('source', '')} | {item.get('view_count_str', '')} | {item.get('pub_date_str', '')}"
+            else:
+                meta = f"\n   출처: {item.get('source', '')} | 등록일: {item.get('pub_date_str', '')}"
+
+            rich_text.append({
+                "type": "text",
+                "text": { "content": meta },
+                "annotations": { "color": "gray", "italic": True }
+            })
+
+            # callout 블록으로 카드형 UI 구성
+            blocks.append({
+                "object": "block",
+                "type": "callout",
+                "callout": {
+                    "rich_text": rich_text,
+                    "icon": { "type": "emoji", "emoji": emoji },
+                    "color": color
+                }
+            })
+
+            # YouTube 전용: 링크 단독 paragraph (작은 크기, 임베드 없음)
+            if is_youtube_section:
                 blocks.append({
                     "object": "block",
-                    "type": "bulleted_list_item",
-                    "bulleted_list_item": {
-                        "rich_text": rich_text
+                    "type": "paragraph",
+                    "paragraph": {
+                        "rich_text": [{
+                            "type": "text",
+                            "text": {
+                                "content": "▶ 영상 바로 보기",
+                                "link": { "url": item["link"] }
+                            },
+                            "annotations": { "color": "red", "bold": True }
+                        }]
                     }
                 })
+
     return blocks
 
 def publish_to_notion_db(blocks, today_str):
