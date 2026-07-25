@@ -40,15 +40,15 @@
             --glow: rgba(96, 165, 250, 0.15);
         }
 
-        * {{
+        * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
             font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
             transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
-        }}
+        }
 
-        body {{
+        body {
             background-color: var(--bg-body);
             color: var(--text-main);
             min-height: 100vh;
@@ -56,14 +56,14 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-        }}
+        }
 
-        .container {{
+        .container {
             width: 100%;
             max-width: 1200px;
-        }}
+        }
 
-        header {{
+        header {
             background: var(--bg-glass);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
@@ -75,32 +75,32 @@
             justify-content: space-between;
             align-items: center;
             box-shadow: var(--shadow-md);
-        }}
+        }
 
-        .brand h1 {{
+        .brand h1 {
             font-size: 1.6rem;
             font-weight: 800;
             background: linear-gradient(135deg, var(--accent-primary) 0%, #a78bfa 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 0.4rem;
-        }}
+        }
 
-        .brand p {{
+        .brand p {
             color: var(--text-sub);
             font-size: 0.9rem;
             display: flex;
             align-items: center;
             gap: 6px;
-        }}
+        }
 
-        .header-actions {{
+        .header-actions {
             display: flex;
             align-items: center;
             gap: 10px;
-        }}
+        }
 
-        .btn {{
+        .btn {
             background: var(--bg-card);
             border: 1px solid var(--border-color);
             color: var(--text-main);
@@ -113,43 +113,43 @@
             font-size: 0.85rem;
             font-weight: 600;
             box-shadow: var(--shadow-sm);
-        }}
+        }
 
-        .btn:hover {{
+        .btn:hover {
             background: var(--border-color);
             transform: translateY(-2px);
-        }}
+        }
 
-        .btn-primary {{
+        .btn-primary {
             background: var(--accent-primary);
             color: #ffffff;
             border: none;
-        }}
+        }
 
-        .btn-primary:hover {{
+        .btn-primary:hover {
             background: var(--accent-primary-hover);
             color: #ffffff;
             box-shadow: 0 0 15px var(--glow);
-        }}
+        }
 
-        .tabs-container {{
+        .tabs-container {
             margin-bottom: 1.5rem;
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
             padding-bottom: 8px;
-        }}
+        }
         
-        .tabs-container::-webkit-scrollbar {{
+        .tabs-container::-webkit-scrollbar {
             display: none; /* 크롬, 사파리 등 모바일 브라우저 스크롤바 숨김 */
-        }}
+        }
 
-        .tabs {{
+        .tabs {
             display: flex;
             gap: 8px;
             white-space: nowrap;
-        }}
+        }
 
-        .tab-btn {{
+        .tab-btn {
             background: var(--bg-card);
             border: 1px solid var(--border-color);
             color: var(--text-sub);
@@ -159,28 +159,28 @@
             font-size: 0.9rem;
             font-weight: 600;
             box-shadow: var(--shadow-sm);
-        }}
+        }
 
-        .tab-btn:hover {{
+        .tab-btn:hover {
             color: var(--text-main);
             border-color: var(--text-muted);
-        }}
+        }
 
-        .tab-btn.active {{
+        .tab-btn.active {
             background: var(--accent-primary);
             color: #ffffff;
             border-color: var(--accent-primary);
             box-shadow: 0 4px 12px var(--glow);
-        }}
+        }
 
-        .grid {{
+        .grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
             gap: 1.25rem;
             width: 100%;
-        }}
+        }
 
-        .card {{
+        .card {
             background: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: 16px;
@@ -192,9 +192,9 @@
             box-shadow: var(--shadow-sm);
             position: relative;
             overflow: hidden;
-        }}
+        }
 
-        .card::before {{
+        .card::before {
             content: '';
             position: absolute;
             top: 0;
@@ -203,39 +203,39 @@
             height: 100%;
             background-color: var(--accent-primary);
             opacity: 0.8;
-        }}
+        }
 
-        .card.youtube-card::before {{
+        .card.youtube-card::before {
             background-color: var(--yt-color);
-        }}
+        }
 
-        .card:hover {{
+        .card:hover {
             transform: translateY(-5px);
             box-shadow: var(--shadow-lg);
             border-color: var(--accent-primary);
-        }}
+        }
 
-        .card.youtube-card:hover {{
+        .card.youtube-card:hover {
             border-color: var(--yt-color);
             box-shadow: 0 8px 20px var(--yt-glow);
-        }}
+        }
 
-        .card-header {{
+        .card-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 1rem;
-        }}
+        }
 
-        .badge {{
+        .badge {
             font-size: 0.75rem;
             font-weight: 700;
             padding: 4px 10px;
             border-radius: 6px;
-        }}
+        }
 
         /* 기사 하단 2~3줄 현장 화법 카드 */
-        .sales-hook-card {{
+        .sales-hook-card {
             background-color: #f0fdf4;
             border-left: 4px solid #16a34a;
             border-radius: 8px;
@@ -243,15 +243,15 @@
             margin-top: 14px;
             margin-bottom: 12px;
             box-shadow: 0 2px 8px rgba(22, 163, 74, 0.06);
-        }}
+        }
 
-        [data-theme="dark"] .sales-hook-card {{
+        [data-theme="dark"] .sales-hook-card {
             background-color: rgba(22, 163, 74, 0.12);
             border-left: 4px solid #34d399;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-        }}
+        }
 
-        .sales-hook-card .hook-badge {{
+        .sales-hook-card .hook-badge {
             display: inline-flex;
             align-items: center;
             gap: 5px;
@@ -262,33 +262,33 @@
             padding: 3px 8px;
             border-radius: 10px;
             margin-bottom: 8px;
-        }}
+        }
 
-        [data-theme="dark"] .sales-hook-card .hook-badge {{
+        [data-theme="dark"] .sales-hook-card .hook-badge {
             background-color: rgba(52, 211, 153, 0.2);
             color: #6ee7b7;
-        }}
+        }
 
-        .sales-hook-card .hook-text {{
+        .sales-hook-card .hook-text {
             font-size: 14px;
             color: #166534;
             font-weight: 500;
             line-height: 1.5;
             margin: 0;
             word-break: keep-all;
-        }}
+        }
 
-        [data-theme="dark"] .sales-hook-card .hook-text {{
+        [data-theme="dark"] .sales-hook-card .hook-text {
             color: #a7f3d0;
-        }}
+        }
 
-        .source-tag {{
+        .source-tag {
             font-size: 0.8rem;
             color: var(--text-muted);
             font-weight: 600;
-        }}
+        }
 
-        .card-title {{
+        .card-title {
             font-size: 1.05rem;
             line-height: 1.5;
             font-weight: 700;
@@ -300,33 +300,33 @@
             overflow: hidden;
             word-break: keep-all;
             flex-grow: 1;
-        }}
+        }
 
-        .card-icon {{
+        .card-icon {
             width: 28px;
             height: 28px;
             flex-shrink: 0;
             margin-top: 2px;
-        }}
+        }
 
-        .card-footer {{
+        .card-footer {
             display: flex;
             justify-content: space-between;
             align-items: center;
             border-top: 1px solid var(--border-color);
             padding-top: 1rem;
             margin-top: auto;
-        }}
+        }
 
-        .card-date {{
+        .card-date {
             font-size: 0.75rem;
             color: var(--text-muted);
             display: flex;
             align-items: center;
             gap: 4px;
-        }}
+        }
 
-        .card-link {{
+        .card-link {
             color: var(--accent-primary);
             text-decoration: none;
             font-size: 0.85rem;
@@ -334,17 +334,17 @@
             display: flex;
             align-items: center;
             gap: 4px;
-        }}
+        }
 
-        .card.youtube-card .card-link {{
+        .card.youtube-card .card-link {
             color: var(--yt-color);
-        }}
+        }
 
-        .card-link:hover {{
+        .card-link:hover {
             text-decoration: underline;
-        }}
+        }
 
-        .no-data {{
+        .no-data {
             grid-column: 1 / -1;
             text-align: center;
             padding: 3rem;
@@ -353,9 +353,9 @@
             background: var(--bg-card);
             border-radius: 16px;
             border: 1px solid var(--border-color);
-        }}
+        }
 
-        .toast {{
+        .toast {
             position: fixed;
             bottom: 2rem;
             left: 50%;
@@ -369,14 +369,14 @@
             opacity: 0;
             z-index: 1000;
             transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
-        }}
+        }
 
-        .toast.show {{
+        .toast.show {
             transform: translateX(-50%) translateY(0);
             opacity: 1;
-        }}
+        }
 
-        footer {{
+        footer {
             margin-top: 3rem;
             text-align: center;
             color: var(--text-muted);
@@ -384,64 +384,64 @@
             padding: 2rem 0;
             border-top: 1px solid var(--border-color);
             width: 100%;
-        }}
+        }
 
-        @media (max-width: 640px) {{
-            body {{
+        @media (max-width: 640px) {
+            body {
                 padding: 1rem 0.5rem;
-            }}
-            header {{
+            }
+            header {
                 padding: 1.25rem 1rem;
                 border-radius: 16px;
                 margin-bottom: 1rem;
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 1.25rem;
-            }}
-            .brand h1 {{
+            }
+            .brand h1 {
                 font-size: 1.35rem;
-            }}
-            .brand p {{
+            }
+            .brand p {
                 font-size: 0.8rem;
-            }}
-            .header-actions {{
+            }
+            .header-actions {
                 width: 100%;
                 flex-direction: row;
                 flex-wrap: wrap;
                 gap: 8px;
-            }}
-            .btn {{
+            }
+            .btn {
                 padding: 8px 12px;
                 font-size: 0.8rem;
                 border-radius: 10px;
                 flex-grow: 1;
                 justify-content: center;
-            }}
-            .tab-btn {{
+            }
+            .tab-btn {
                 padding: 8px 15px;
                 font-size: 0.85rem;
-            }}
-            .grid {{
+            }
+            .grid {
                 grid-template-columns: 1fr;
                 gap: 1rem;
-            }}
-            .card {{
+            }
+            .card {
                 padding: 1.25rem;
                 border-radius: 14px;
-            }}
-            .card-title {{
+            }
+            .card-title {
                 font-size: 0.98rem;
                 margin-bottom: 1rem;
-            }}
-            .insight-banner {{
+            }
+            .insight-banner {
                 padding: 1rem !important;
                 border-radius: 14px !important;
                 margin-bottom: 1rem !important;
-            }}
-            .insight-banner p {{
+            }
+            .insight-banner p {
                 font-size: 0.88rem !important;
-            }}
-        }}
+            }
+        }
     </style>
 </head>
 <body>
@@ -468,6 +468,14 @@
                     <span>테마 변경</span>
                 </button>
                 
+    <a href="https://notion.so/3a8db42cebe081e4a31be237ecb892ca" target="_blank" class="btn btn-primary" style="text-decoration: none;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+        </svg>
+        모바일 노션뷰
+    </a>
+    
                 <button class="btn btn-primary" onclick="copyMailText()">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
@@ -511,29 +519,266 @@
 
         <!-- News Card Grid -->
         <section class="grid">
-            <div class="card " data-category="silson"><div class="card-header"><span class="badge" style="background-color: rgba(59, 130, 246, 0.1); color: #3B82F6;">제도·정책 이슈</span><span class='source-tag'>천지일보</span></div><div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;"><h3 class="card-title">‘연 2000만원 초과 일용직 건보료 부과’ 추진 논란… 복지부 “확정된 바 없어”</h3><svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg></div><div class="sales-hook-card" style=""><span class="hook-badge" style="">💡 현장 화법 포인트</span><p class="hook-text" style="">건강보험 및 제도 개편 이슈(2000만원)가 본격화되고 있습니다. 보유 중인 보장 자산의 틈새 항목을 사전에 점검해 드리길 바랍니다.</p></div><div class="card-footer"><span class="card-date">2026-07-25 02:35</span><a href="https://news.google.com/rss/articles/CBMiakFVX3lxTFBHbHh6SmZBbFJxZWRueElNeTZYYXVpQkNZSl90Qko3Q0RPRWxwY3NEejkyV0xoa2J2eVJVem9iVnFhVVJYQks2dXQ4LTQyQ1RJMFVLeGFqZ2dGLUloRFRWbDVZQWI4c0ZmaXc?oc=5" target="_blank" class="card-link" rel="noopener noreferrer">바로가기 -></a></div></div>
-<div class="card " data-category="silson"><div class="card-header"><span class="badge" style="background-color: rgba(59, 130, 246, 0.1); color: #3B82F6;">제도·정책 이슈</span><span class='source-tag'>의학신문</span></div><div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;"><h3 class="card-title">전국임상물리치료사연대, “도수치료 관리급여 즉각 철회하라”</h3><svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg></div><div class="sales-hook-card" style=""><span class="hook-badge" style="">💡 현장 화법 포인트</span><p class="hook-text" style="">실손 손해율 악화 및 과잉진료 단속 강화로 인해 향후 비급여 보장 축소 및 지급 심사 강화가 우려됩니다. 기존 보유 중인 실손 및 비급여 수술비 보장 한도를 사전에 점검하고 대비하시는 것을 권유합니다.</p></div><div class="card-footer"><span class="card-date">2026-07-24 04:54</span><a href="https://news.google.com/rss/articles/CBMia0FVX3lxTE00eEdwam9jYXVhM1VENTFIcTFlaW9RbXJWbUxRWnNuZy1rd1lCRzJjTjZjcG84VzlYUVB0cWRfZzZjc2pVRnFCOVFYRzE5X29XR1JNMlpGRlpNcDRSUUNZMjFfcmYzYlExei00?oc=5" target="_blank" class="card-link" rel="noopener noreferrer">바로가기 -></a></div></div>
-<div class="card " data-category="silson"><div class="card-header"><span class="badge" style="background-color: rgba(59, 130, 246, 0.1); color: #3B82F6;">제도·정책 이슈</span><span class='source-tag'>더메디컬</span></div><div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;"><h3 class="card-title">“중증 IgA 신병증, 50년 만에 신약 나왔지만 건보 안 돼 그림의 떡”</h3><svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg></div><div class="sales-hook-card" style=""><span class="hook-badge" style="">💡 현장 화법 포인트</span><p class="hook-text" style="">보장 가이드라인이 새로 적용됨에 따라, 가입 고객님의 기존 실손 및 보장 한도 유지 여부를 사전 체크해 드리는 것을 추천합니다.</p></div><div class="card-footer"><span class="card-date">2026-07-24 11:51</span><a href="https://news.google.com/rss/articles/CBMibkFVX3lxTE03R2U4bWd0OGR6QmFocEd4WmdDQ2FrTktDdVYtNEZHd0RNNHpKdlg1QTEtbGlOUVVzdTVha0xRY243NGhGUE5aSUVsZ0FSLUVNUnZRQnZjSkdFUGtBenhxcjlnYTk5S09leVJkZkFB0gFuQVVfeXFMTTdHZThtZ3Q4ZHpCYWhwR3haZ0NDYWtOS0N1Vi00Rkd3RE00ekp2WDVBMS1saU5RVXN1NWFrTFFjbjc0aEZQTlpJRWxnQVItRU1SdlFCdmNKR0VQa0F6eHFyOWdhOTlLT2V5UmRmQUE?oc=5" target="_blank" class="card-link" rel="noopener noreferrer">바로가기 -></a></div></div>
-<div class="card " data-category="hospital_cost"><div class="card-header"><span class="badge" style="background-color: rgba(16, 185, 129, 0.1); color: #10B981;">질병·치료비 리얼리티</span><span class='source-tag'>마켓인</span></div><div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;"><h3 class="card-title">실손 있다고 했더니 "무좀 치료 480만원"</h3><svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg></div><div class="sales-hook-card" style=""><span class="hook-badge" style="">💡 현장 화법 포인트</span><p class="hook-text" style="">(480만원) 적용에 따른 진료비 부담을 대비해, 고객님의 비급여 및 통원비 보장 한도를 사전에 점검해 보세요.</p></div><div class="card-footer"><span class="card-date">2026-07-23 20:48</span><a href="https://news.google.com/rss/articles/CBMic0FVX3lxTE9kZW9XelZjV1lQZkN4b3dLMlRsQk9pZzBmZlhGQTAyREVhVHFsTjlEcEJzLW50YklHMDd0TEM2YnhCZmtUT2FETzYxejdlZ1JKcmtIQllUMEZoQTVxTkVtNERKMzY5RDg1d1FPMlY2QUNobWs?oc=5" target="_blank" class="card-link" rel="noopener noreferrer">바로가기 -></a></div></div>
-<div class="card " data-category="hospital_cost"><div class="card-header"><span class="badge" style="background-color: rgba(16, 185, 129, 0.1); color: #10B981;">질병·치료비 리얼리티</span><span class='source-tag'>데일리팜</span></div><div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;"><h3 class="card-title">전이성 대장암 3차 치료제 건강보험 접근성 개선 목소리</h3><svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg></div><div class="sales-hook-card" style=""><span class="hook-badge" style="">💡 현장 화법 포인트</span><p class="hook-text" style="">최근 고액 비급여 치료비 관련 수술 및 진료 부담이 커지고 있습니다. 기존 보장에서 해당 항목이 충분히 커버되는지 사전 점검이 필요한 시점입니다.</p></div><div class="card-footer"><span class="card-date">2026-07-25 00:45</span><a href="https://news.google.com/rss/articles/CBMiVkFVX3lxTE9ETElLYWhnSENCLXRjNGR6MkxBT01VQjhEeUZEMXJtWU5paTJZS3B5UVJFSUlWZjJkTjROcmhiWHktOGlzYzk0cXVvRS1aeHBncVJiMDR3?oc=5" target="_blank" class="card-link" rel="noopener noreferrer">바로가기 -></a></div></div>
-<div class="card " data-category="hospital_cost"><div class="card-header"><span class="badge" style="background-color: rgba(16, 185, 129, 0.1); color: #10B981;">질병·치료비 리얼리티</span><span class='source-tag'>성주신문</span></div><div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;"><h3 class="card-title">저소득층 암환자 의료비 연중 지원</h3><svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg></div><div class="sales-hook-card" style=""><span class="hook-badge" style="">💡 현장 화법 포인트</span><p class="hook-text" style="">신의료기술 및 신약 치료 적용에 따른 진료비 부담을 대비해, 고객님의 비급여 및 통원비 보장 한도를 사전에 점검해 보세요.</p></div><div class="card-footer"><span class="card-date">2026-07-24 08:13</span><a href="https://news.google.com/rss/articles/CBMiV0FVX3lxTE9TTE1TLW1QWGh5NXhneWRhb3BnVHA5RkVRQURTck02NEw4azVQQ0o0LW5xQ24wMDJKNVFoWkhZcUN4bUc3dk0taEt0ZGZsem10NVZKMzNFUQ?oc=5" target="_blank" class="card-link" rel="noopener noreferrer">바로가기 -></a></div></div>
-<div class="card " data-category="tax_benefit"><div class="card-header"><span class="badge" style="background-color: rgba(202, 138, 4, 0.1); color: #CA8A04;">절세·세제</span><span class='source-tag'>네이트</span></div><div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;"><h3 class="card-title">100세 시대, 종신보험은 상속 넘어 노후전략으로 [보험 200% 활용법]</h3><svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg></div><div class="sales-hook-card" style=""><span class="hook-badge" style="">💡 현장 화법 포인트</span><p class="hook-text" style="">최근 (200%) 관련 세제 혜택과 공제 한도 변경 이슈가 주목받고 있습니다. 종신보험 및 절세 특약을 활용한 합법적 자산 승계 플랜을 점검해 보세요.</p></div><div class="card-footer"><span class="card-date">2026-07-23 07:11</span><a href="https://news.google.com/rss/articles/CBMiU0FVX3lxTE91aXRpbXNtRGNSZUZCRFNHV3pHUkJpdHIxUjV5ak16Qnlydk5HMHhYYzZ3dTdoNGpoTmJIXzdQcW92TDdjVnlHNW9Rek01dzd2d0Nz?oc=5" target="_blank" class="card-link" rel="noopener noreferrer">바로가기 -></a></div></div>
-<div class="card " data-category="tax_benefit"><div class="card-header"><span class="badge" style="background-color: rgba(202, 138, 4, 0.1); color: #CA8A04;">절세·세제</span><span class='source-tag'>매일경제TV</span></div><div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;"><h3 class="card-title">[단독] 월세가격까지 치솟자…정부, 월세 세액공제 혜택 늘린다</h3><svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg></div><div class="sales-hook-card" style=""><span class="hook-badge" style="">💡 현장 화법 포인트</span><p class="hook-text" style="">세제 개정 동향에 따라 자산 보유 고객님의 절세 니즈가 커지고 있습니다. 종신보험의 비과세 혜택과 절세 설계를 사전에 안내해 드리는 것을 추천합니다.</p></div><div class="card-footer"><span class="card-date">2026-07-24 10:26</span><a href="https://news.google.com/rss/articles/CBMiaEFVX3lxTE9yeV82NE1HWVlmR3FrMVBFcGk1UmlhZnh3cVlSVG9FMnBEbHlQTE8yLWw5a1l4TE1XOU5NaDhISmFBSjhWYjJiSV9uV2czdUpsOXk1cjY0a2VNdnd6SFNyUmpQcjdZc0ND?oc=5" target="_blank" class="card-link" rel="noopener noreferrer">바로가기 -></a></div></div>
-<div class="card " data-category="tax_benefit"><div class="card-header"><span class="badge" style="background-color: rgba(202, 138, 4, 0.1); color: #CA8A04;">절세·세제</span><span class='source-tag'>christiandaily.co.kr</span></div><div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;"><h3 class="card-title">NCCK, 실행위서 민법 개정안·증여세 관련 논의</h3><svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg></div><div class="sales-hook-card" style=""><span class="hook-badge" style="">💡 현장 화법 포인트</span><p class="hook-text" style="">상속세 및 증여세 이슈와 관련하여 합법적 자산 승계 수단으로 종신보험의 유용성을 사전에 공유하고 보장 플랜을 점검해 보시길 권유합니다.</p></div><div class="card-footer"><span class="card-date">2026-07-23 08:02</span><a href="https://news.google.com/rss/articles/CBMiV0FVX3lxTFBkR3NJZm9rbW1OLXVrdEpKYVh6UGNqSFFkb2Y1cUJVYzcwWHdDM0ZGSzY4NmZDRGJxT2ZCYzZ3aXdMZXFjLV96d29ZekcyVm1LVE5FXzJzSdIBXEFVX3lxTE9OWHRKMDJYSDhxS01oaXFUS0xtS0kxV1hvTDZmdWc4TzZxc09US296NzQ4LVIzR2ZpMlRCeENULUJBNUlJVmI0ZWRkNWx5eElEc3JFOW1PbERFUk8z?oc=5" target="_blank" class="card-link" rel="noopener noreferrer">바로가기 -></a></div></div>
-<div class="card " data-category="product_trend"><div class="card-header"><span class="badge" style="background-color: rgba(6, 182, 212, 0.1); color: #06B6D4;">상품·시장 동향</span><span class='source-tag'>더퍼블릭</span></div><div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;"><h3 class="card-title">보험료 인상에도 새는 곳 못 막았다...車보험 손해율 84.5% ‘빨간불’</h3><svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path></svg></div><div class="sales-hook-card" style=""><span class="hook-badge" style="">💡 현장 화법 포인트</span><p class="hook-text" style="">실손 손해율 악화 및 과잉진료 단속 강화로 인해 향후 비급여 보장 축소 및 지급 심사 강화가 우려됩니다. 기존 보유 중인 실손 및 비급여 수술비 보장 한도를 사전에 점검하고 대비하시는 것을 권유합니다.</p></div><div class="card-footer"><span class="card-date">2026-07-23 06:36</span><a href="https://news.google.com/rss/articles/CBMib0FVX3lxTFBkWTE4VmJuWVYzNXhoRW1DZ0RoYzlnaEhoNmNfcW9tbVpfR0h1c1FsX0VSQi1mdmhOZTFqMTg2TVd4MHFRejZ1U2dTd0NaQUNvTmxXOGdpdTBxcGlZRHd4WkFzREd4b1dLcUphdTgwONIBb0FVX3lxTFBkWTE4VmJuWVYzNXhoRW1DZ0RoYzlnaEhoNmNfcW9tbVpfR0h1c1FsX0VSQi1mdmhOZTFqMTg2TVd4MHFRejZ1U2dTd0NaQUNvTmxXOGdpdTBxcGlZRHd4WkFzREd4b1dLcUphdTgwOA?oc=5" target="_blank" class="card-link" rel="noopener noreferrer">바로가기 -></a></div></div>
-<div class="card " data-category="product_trend"><div class="card-header"><span class="badge" style="background-color: rgba(6, 182, 212, 0.1); color: #06B6D4;">상품·시장 동향</span><span class='source-tag'>MEDI:GATE NEWS</span></div><div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;"><h3 class="card-title">“과잉진료, 의사 탓만 할 수 있나”…실손보험이 평범한 의사도 비급여로 내모는 구조</h3><svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path></svg></div><div class="sales-hook-card" style=""><span class="hook-badge" style="">💡 현장 화법 포인트</span><p class="hook-text" style="">실손 손해율 악화 및 과잉진료 단속 강화로 인해 향후 비급여 보장 축소 및 지급 심사 강화가 우려됩니다. 기존 보유 중인 실손 및 비급여 수술비 보장 한도를 사전에 점검하고 대비하시는 것을 권유합니다.</p></div><div class="card-footer"><span class="card-date">2026-07-23 20:46</span><a href="https://news.google.com/rss/articles/CBMiV0FVX3lxTE1PTzVLazc4bnNQNFpBZ3haUHdPb3M2allrcVg5X2JmME00bWVPcjNUekFiWHVKWElyYXNwNDU4aGx0RWdhaVJKOC11NnVmVkdiX2Vqang5cw?oc=5" target="_blank" class="card-link" rel="noopener noreferrer">바로가기 -></a></div></div>
-<div class="card " data-category="product_trend"><div class="card-header"><span class="badge" style="background-color: rgba(6, 182, 212, 0.1); color: #06B6D4;">상품·시장 동향</span><span class='source-tag'>팜뉴스</span></div><div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;"><h3 class="card-title">8월 약가 가산제도 대개편, 생존 전략은?</h3><svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path></svg></div><div class="sales-hook-card" style=""><span class="hook-badge" style="">💡 현장 화법 포인트</span><p class="hook-text" style="">타사 상품 동향 개편 전 기존 가입 조건의 이점을 고객님께 미리 안내해 드리는 것이 세일즈에 유리합니다.</p></div><div class="card-footer"><span class="card-date">2026-07-23 21:00</span><a href="https://news.google.com/rss/articles/CBMibEFVX3lxTE85b0J6Y2ZPVlI4ckpvd252ODZqRFBpTlByc2JadEJIZHhyUjdySnNiSmx3TUdhbnVtaEVYcTVURWRUQ1plTmFtTi1tTnhPN0xSXzM0UU1lM1RsZnk1MTRhYUN1MGVQZGtlQjc3Qw?oc=5" target="_blank" class="card-link" rel="noopener noreferrer">바로가기 -></a></div></div>
-<article class="card petition-item" data-category="assembly_petition"><div class="card-header petition-meta"><span class="badge disease-tag" style="background-color: rgba(236, 72, 153, 0.1); color: #EC4899;">국회청원 (5만달성)</span><span class="source-tag petition-period" style="color: #EC4899; font-weight: 700;">동의수: 52,647명 (마감: 2026-06-10)</span></div><h3 class="card-title petition-item-title" style="margin-top: 12px; margin-bottom: 1.5rem; line-height: 1.5;"><a href="https://likms.assembly.go.kr/bill/billDetail.do?billId=PRC_P2I6E0F6A1X1K0N9N3Z8W0W8V8G8O0" target="_blank" rel="noopener" style="color: var(--text-main); text-decoration: none;">[국회청원] [5만달성] 소세포폐암 치료제 탈라타맙(Tarlatamab) 건강보험 급여 적용 요청에 관한 청원</a></h3><div class="card-footer petition-footer" style="margin-top: auto; padding-top: 12px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;"><span class="card-date" style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">국회청원 원문 (5만명 달성 회부)</span><a href="https://likms.assembly.go.kr/bill/billDetail.do?billId=PRC_P2I6E0F6A1X1K0N9N3Z8W0W8V8G8O0" class="card-link btn-link" target="_blank" rel="noopener" style="color: #EC4899; font-weight: 700;">청원내용 확인하기 -></a></div></article>
-<article class="card petition-item" data-category="assembly_petition"><div class="card-header petition-meta"><span class="badge disease-tag" style="background-color: rgba(236, 72, 153, 0.1); color: #EC4899;">국회청원 (중증급여화)</span><span class="source-tag petition-period" style="color: #EC4899; font-weight: 700;">동의수: 2,340명 (마감: 2026-08-06)</span></div><h3 class="card-title petition-item-title" style="margin-top: 12px; margin-bottom: 1.5rem; line-height: 1.5;"><a href="https://petitions.assembly.go.kr/proceed/onGoingAll/556F17F3AD796CE9E064ECE7A7064E8B" target="_blank" rel="noopener" style="color: var(--text-main); text-decoration: none;">[국회청원] 폰히펠-린다우 증후군(VHL) 치료제 웰리렉(벨주티판)의 건강보험 급여 적용 요청에 관한 청원</a></h3><div class="card-footer petition-footer" style="margin-top: auto; padding-top: 12px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;"><span class="card-date" style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">국회청원 원문 (동의 진행 중)</span><a href="https://petitions.assembly.go.kr/proceed/onGoingAll/556F17F3AD796CE9E064ECE7A7064E8B" class="card-link btn-link" target="_blank" rel="noopener" style="color: #EC4899; font-weight: 700;">청원내용 확인하기 -></a></div></article>
-<article class="card petition-item" data-category="assembly_petition"><div class="card-header petition-meta"><span class="badge disease-tag" style="background-color: rgba(236, 72, 153, 0.1); color: #EC4899;">국회청원 (중증급여화)</span><span class="source-tag petition-period" style="color: #EC4899; font-weight: 700;">동의수: 494명 (마감: 2026-08-01)</span></div><h3 class="card-title petition-item-title" style="margin-top: 12px; margin-bottom: 1.5rem; line-height: 1.5;"><a href="https://petitions.assembly.go.kr/proceed/onGoingAll/53082F75DF4726EAE064B49691C6967B" target="_blank" rel="noopener" style="color: var(--text-main); text-decoration: none;">[국회청원] 중증장애인 등 환자의 치료권을 보장하기 위한 도수치료 관리급여 정책 재검토 요청에 관한 청원</a></h3><div class="card-footer petition-footer" style="margin-top: auto; padding-top: 12px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;"><span class="card-date" style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">국회청원 원문 (동의 진행 중)</span><a href="https://petitions.assembly.go.kr/proceed/onGoingAll/53082F75DF4726EAE064B49691C6967B" class="card-link btn-link" target="_blank" rel="noopener" style="color: #EC4899; font-weight: 700;">청원내용 확인하기 -></a></div></article>
-<div class="card youtube-card" data-category="youtube"><div class="card-header"><span class="badge" style="background-color: rgba(239, 68, 68, 0.1); color: #EF4444;">유튜브 핫이슈</span><span class='source-tag' style='color: var(--yt-color);'>금융상품연구소</span></div><div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;"><h3 class="card-title">비급여 암주요치료비 VS 비급여 암통합치료비, 실제 보장 사례로 비교했습니다</h3><svg class="card-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.163a3.003 3.003 0 0 0-2.11-2.11C19.518 3.545 12 3.545 12 3.545s-7.518 0-9.388.508a3.003 3.003 0 0 0-2.11 2.11C0 8.033 0 12 0 12s0 3.967.502 5.837a3.003 3.003 0 0 0 2.11 2.11c1.87.508 9.388.508 9.388.508s7.518 0 9.388-.508a3.003 3.003 0 0 0 2.11-2.11C24 15.967 24 12 24 12s0-3.967-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></div><div class="sales-hook-card" style="background-color: #fef2f2; border-left: 4px solid #ef4444;"><div style="margin-bottom: 6px;"><span class='hook-badge' style='background-color: #fee2e2; color: #dc2626; font-size: 11px; margin-right: 4px;'>#비급여</span> <span class='hook-badge' style='background-color: #fee2e2; color: #dc2626; font-size: 11px; margin-right: 4px;'>#암주요치료비</span> <span class='hook-badge' style='background-color: #fee2e2; color: #dc2626; font-size: 11px; margin-right: 4px;'>#VS</span> <span class='hook-badge' style='background-color: #fee2e2; color: #dc2626; font-size: 11px; margin-right: 4px;'>#암통합치료비</span></div><p class="hook-text" style="color: #991b1b;">'비급여 암주요치료비 VS 비급여 암통합치료비, 실제 보장 사례로 비교했습니다' 영상은 금융상품연구소 채널에서 비급여 및 보장 틈새 점검의 팩트 포인트를 조명합니다. 비급여 암주요치료비와 비급여 암통합치료비는 이름은 비슷하지만 지급 방식이 다릅니다. 보험료 차이만큼 실제 보장도 달라지는지 ...</p></div><div class="card-footer"><span class="card-date"><span style="font-weight: 800; color: var(--yt-color); margin-right: 5px;">조회수 3,056회</span>(3일 전)</span><a href="https://www.youtube.com/watch?v=WSShPoB_P3U" target="_blank" class="card-link" rel="noopener noreferrer">바로가기 -></a></div></div>
-<div class="card youtube-card" data-category="youtube"><div class="card-header"><span class="badge" style="background-color: rgba(239, 68, 68, 0.1); color: #EF4444;">유튜브 핫이슈</span><span class='source-tag' style='color: var(--yt-color);'>보험탈출구</span></div><div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;"><h3 class="card-title">설계사들도 헷갈려하는 유병자보험 고지의무 완벽해석! 새로운 판례까지 전부 정리해드립니다!</h3><svg class="card-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.163a3.003 3.003 0 0 0-2.11-2.11C19.518 3.545 12 3.545 12 3.545s-7.518 0-9.388.508a3.003 3.003 0 0 0-2.11 2.11C0 8.033 0 12 0 12s0 3.967.502 5.837a3.003 3.003 0 0 0 2.11 2.11c1.87.508 9.388.508 9.388.508s7.518 0 9.388-.508a3.003 3.003 0 0 0 2.11-2.11C24 15.967 24 12 24 12s0-3.967-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></div><div class="sales-hook-card" style="background-color: #fef2f2; border-left: 4px solid #ef4444;"><div style="margin-bottom: 6px;"><span class='hook-badge' style='background-color: #fee2e2; color: #dc2626; font-size: 11px; margin-right: 4px;'>#유병자보험</span> <span class='hook-badge' style='background-color: #fee2e2; color: #dc2626; font-size: 11px; margin-right: 4px;'>#설계사들도</span> <span class='hook-badge' style='background-color: #fee2e2; color: #dc2626; font-size: 11px; margin-right: 4px;'>#헷갈려하는</span> <span class='hook-badge' style='background-color: #fee2e2; color: #dc2626; font-size: 11px; margin-right: 4px;'>#고지의무</span></div><p class="hook-text" style="color: #991b1b;">'설계사들도 헷갈려하는 유병자보험 고지의무 완벽해석! 새로운 판례까지 전부 정리해드립니다!' 영상은 보험탈출구 채널에서 유병자보험 및 보장 틈새 점검의 팩트 포인트(7년)를 조명합니다. 설계사도 헷갈려하는 유병자보험 고지의무 7년차 보험 전문 채널 보험탈출구에서 가장 헷갈리는 고지의무를 실제 사례와 약관을 바탕 ...</p></div><div class="card-footer"><span class="card-date"><span style="font-weight: 800; color: var(--yt-color); margin-right: 5px;">조회수 14,470회</span>(2주 전)</span><a href="https://www.youtube.com/watch?v=nWOQSa2spYk" target="_blank" class="card-link" rel="noopener noreferrer">바로가기 -></a></div></div>
-<div class="card youtube-card" data-category="youtube"><div class="card-header"><span class="badge" style="background-color: rgba(239, 68, 68, 0.1); color: #EF4444;">유튜브 핫이슈</span><span class='source-tag' style='color: var(--yt-color);'>보험탈출구_최적의보험설계</span></div><div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;"><h3 class="card-title">보험리모델링 "이것"놓치면 진짜 큰일납니다.. 설계사가 권유해도 절대 해지하면 안되는 보험</h3><svg class="card-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.163a3.003 3.003 0 0 0-2.11-2.11C19.518 3.545 12 3.545 12 3.545s-7.518 0-9.388.508a3.003 3.003 0 0 0-2.11 2.11C0 8.033 0 12 0 12s0 3.967.502 5.837a3.003 3.003 0 0 0 2.11 2.11c1.87.508 9.388.508 9.388.508s7.518 0 9.388-.508a3.003 3.003 0 0 0 2.11-2.11C24 15.967 24 12 24 12s0-3.967-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></div><div class="sales-hook-card" style="background-color: #fef2f2; border-left: 4px solid #ef4444;"><div style="margin-bottom: 6px;"><span class='hook-badge' style='background-color: #fee2e2; color: #dc2626; font-size: 11px; margin-right: 4px;'>#보험리모델링</span> <span class='hook-badge' style='background-color: #fee2e2; color: #dc2626; font-size: 11px; margin-right: 4px;'>#리모델링</span> <span class='hook-badge' style='background-color: #fee2e2; color: #dc2626; font-size: 11px; margin-right: 4px;'>#큰일납니다</span> <span class='hook-badge' style='background-color: #fee2e2; color: #dc2626; font-size: 11px; margin-right: 4px;'>#설계사가</span></div><p class="hook-text" style="color: #991b1b;">'보험리모델링 "이것"놓치면 진짜 큰일납니다.. 설계사가 권유해도 절대 해지하면 안되는 보험' 영상은 보험탈출구_최적의보험설계 채널에서 보험리모델링 및 보장 틈새 점검의 팩트 포인트를 조명합니다. 보험 리모델링, 보험점검 고민하고 계신다면 설계사가 해지를 권유해도 이 보험만큼은 꼭 유지하세요! 지금은 가입하고 싶어도 가입 ...</p></div><div class="card-footer"><span class="card-date"><span style="font-weight: 800; color: var(--yt-color); margin-right: 5px;">조회수 3,631회</span>(1일 전)</span><a href="https://www.youtube.com/watch?v=xNz14HRbMZM" target="_blank" class="card-link" rel="noopener noreferrer">바로가기 -></a></div></div>
+            
+                <article class="card petition-item" data-category="assembly_petition">
+                  <div class="card-header petition-meta">
+                    <span class="badge disease-tag" style="background-color: rgba(236, 72, 153, 0.1); color: #EC4899;">국회청원 (5만달성)</span>
+                    <span class="source-tag petition-period" style="color: #EC4899; font-weight: 700;">동의수: 52,647명 (마감: 2026-06-10)</span>
+                  </div>
+                  <h3 class="card-title petition-item-title" style="margin-top: 12px; margin-bottom: 1.5rem; line-height: 1.5;">
+                    <a href="https://likms.assembly.go.kr/bill/billDetail.do?billId=PRC_P2I6E0F6A1X1K0N9N3Z8W0W8V8G8O0" target="_blank" rel="noopener" style="color: var(--text-main); text-decoration: none;">
+                      [국회청원] [5만달성] 소세포폐암 치료제 탈라타맙(Tarlatamab) 건강보험 급여 적용 요청에 관한 청원
+                    </a>
+                  </h3>
+                  <div class="card-footer petition-footer" style="margin-top: auto; padding-top: 12px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                    <span class="card-date" style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">국회청원 원문 (5만명 달성 회부)</span>
+                    <a href="https://likms.assembly.go.kr/bill/billDetail.do?billId=PRC_P2I6E0F6A1X1K0N9N3Z8W0W8V8G8O0" class="card-link btn-link" target="_blank" rel="noopener" style="color: #EC4899; font-weight: 700;">
+                      청원내용 확인하기 ↗
+                    </a>
+                  </div>
+                </article>
+                
+
+                <article class="card petition-item" data-category="assembly_petition">
+                  <div class="card-header petition-meta">
+                    <span class="badge disease-tag" style="background-color: rgba(236, 72, 153, 0.1); color: #EC4899;">국회청원 (중증급여화)</span>
+                    <span class="source-tag petition-period" style="color: #EC4899; font-weight: 700;">동의수: 2,339명 (마감: 2026-08-06)</span>
+                  </div>
+                  <h3 class="card-title petition-item-title" style="margin-top: 12px; margin-bottom: 1.5rem; line-height: 1.5;">
+                    <a href="https://petitions.assembly.go.kr/proceed/onGoingAll/556F17F3AD796CE9E064ECE7A7064E8B" target="_blank" rel="noopener" style="color: var(--text-main); text-decoration: none;">
+                      [국회청원] 폰히펠-린다우 증후군(VHL) 치료제 웰리렉(벨주티판)의 건강보험 급여 적용 요청에 관한 청원
+                    </a>
+                  </h3>
+                  <div class="card-footer petition-footer" style="margin-top: auto; padding-top: 12px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                    <span class="card-date" style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">국회청원 원문 (동의 진행 중)</span>
+                    <a href="https://petitions.assembly.go.kr/proceed/onGoingAll/556F17F3AD796CE9E064ECE7A7064E8B" class="card-link btn-link" target="_blank" rel="noopener" style="color: #EC4899; font-weight: 700;">
+                      청원내용 확인하기 ↗
+                    </a>
+                  </div>
+                </article>
+                
+
+                <article class="card petition-item" data-category="assembly_petition">
+                  <div class="card-header petition-meta">
+                    <span class="badge disease-tag" style="background-color: rgba(236, 72, 153, 0.1); color: #EC4899;">국회청원 (중증급여화)</span>
+                    <span class="source-tag petition-period" style="color: #EC4899; font-weight: 700;">동의수: 493명 (마감: 2026-08-01)</span>
+                  </div>
+                  <h3 class="card-title petition-item-title" style="margin-top: 12px; margin-bottom: 1.5rem; line-height: 1.5;">
+                    <a href="https://petitions.assembly.go.kr/proceed/onGoingAll/53082F75DF4726EAE064B49691C6967B" target="_blank" rel="noopener" style="color: var(--text-main); text-decoration: none;">
+                      [국회청원] 중증장애인 등 환자의 치료권을 보장하기 위한 도수치료 관리급여 정책 재검토 요청에 관한 청원
+                    </a>
+                  </h3>
+                  <div class="card-footer petition-footer" style="margin-top: auto; padding-top: 12px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                    <span class="card-date" style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">국회청원 원문 (동의 진행 중)</span>
+                    <a href="https://petitions.assembly.go.kr/proceed/onGoingAll/53082F75DF4726EAE064B49691C6967B" class="card-link btn-link" target="_blank" rel="noopener" style="color: #EC4899; font-weight: 700;">
+                      청원내용 확인하기 ↗
+                    </a>
+                  </div>
+                </article>
+                
+
+            <div class="card youtube-card" data-category="youtube">
+                <div class="card-header">
+                    <span class="badge" style="background-color: rgba(239, 68, 68, 0.1); color: #EF4444;">
+                        유튜브 핫이슈
+                    </span>
+                    
+                    <span class='source-tag' style='color: var(--yt-color);'>금융상품연구소</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+                    <h3 class="card-title">비급여 암주요치료비 VS 비급여 암통합치료비, 실제 보장 사례로 비교했습니다</h3>
+                    
+                <svg class="card-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M23.498 6.163a3.003 3.003 0 0 0-2.11-2.11C19.518 3.545 12 3.545 12 3.545s-7.518 0-9.388.508a3.003 3.003 0 0 0-2.11 2.11C0 8.033 0 12 0 12s0 3.967.502 5.837a3.003 3.003 0 0 0 2.11 2.11c1.87.508 9.388.508 9.388.508s7.518 0 9.388-.508a3.003 3.003 0 0 0 2.11-2.11C24 15.967 24 12 24 12s0-3.967-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                </svg>
+                
+                </div>
+                
+                
+                    <div class="sales-hook-card" style="background-color: #fef2f2; border-left: 4px solid #ef4444;">
+                        <div style="margin-bottom: 6px;"><span class='hook-badge' style='background-color: #fee2e2; color: #dc2626; font-size: 11px; margin-right: 4px;'>#비급여</span> <span class='hook-badge' style='background-color: #fee2e2; color: #dc2626; font-size: 11px; margin-right: 4px;'>#암주요치료비</span> <span class='hook-badge' style='background-color: #fee2e2; color: #dc2626; font-size: 11px; margin-right: 4px;'>#VS</span> <span class='hook-badge' style='background-color: #fee2e2; color: #dc2626; font-size: 11px; margin-right: 4px;'>#암통합치료비</span></div>
+                        <p class="hook-text" style="color: #991b1b;">'비급여 암주요치료비 VS 비급여 암통합치료비, 실제 보장 사례로 비교했습니다' 영상은 금융상품연구소 채널에서 비급여 및 보장 틈새 점검의 팩트 포인트를 조명합니다. 비급여 암주요치료비와 비급여 암통합치료비는 이름은 비슷하지만 지급 방식이 다릅니다. 보험료 차이만큼 실제 보장도 달라지는지 ...</p>
+                    </div>
+                    
+                
+                
+                <div class="card-footer">
+                    
+                <span class="card-date">
+                    <span style="font-weight: 800; color: var(--yt-color); margin-right: 5px;">조회수 3,012회</span>
+                    (3일 전)
+                </span>
+                
+                    <a href="https://www.youtube.com/watch?v=WSShPoB_P3U" target="_blank" class="card-link" rel="noopener noreferrer">
+                        바로가기
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                            <polyline points="15 3 21 3 21 9"></polyline>
+                            <line x1="10" y1="14" x2="21" y2="3"></line>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+            
+
+            <div class="card youtube-card" data-category="youtube">
+                <div class="card-header">
+                    <span class="badge" style="background-color: rgba(239, 68, 68, 0.1); color: #EF4444;">
+                        유튜브 핫이슈
+                    </span>
+                    
+                    <span class='source-tag' style='color: var(--yt-color);'>보험탈출구</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+                    <h3 class="card-title">설계사들도 헷갈려하는 유병자보험 고지의무 완벽해석! 새로운 판례까지 전부 정리해드립니다!</h3>
+                    
+                <svg class="card-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M23.498 6.163a3.003 3.003 0 0 0-2.11-2.11C19.518 3.545 12 3.545 12 3.545s-7.518 0-9.388.508a3.003 3.003 0 0 0-2.11 2.11C0 8.033 0 12 0 12s0 3.967.502 5.837a3.003 3.003 0 0 0 2.11 2.11c1.87.508 9.388.508 9.388.508s7.518 0 9.388-.508a3.003 3.003 0 0 0 2.11-2.11C24 15.967 24 12 24 12s0-3.967-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                </svg>
+                
+                </div>
+                
+                
+                    <div class="sales-hook-card" style="background-color: #fef2f2; border-left: 4px solid #ef4444;">
+                        <div style="margin-bottom: 6px;"><span class='hook-badge' style='background-color: #fee2e2; color: #dc2626; font-size: 11px; margin-right: 4px;'>#유병자보험</span> <span class='hook-badge' style='background-color: #fee2e2; color: #dc2626; font-size: 11px; margin-right: 4px;'>#설계사들도</span> <span class='hook-badge' style='background-color: #fee2e2; color: #dc2626; font-size: 11px; margin-right: 4px;'>#헷갈려하는</span> <span class='hook-badge' style='background-color: #fee2e2; color: #dc2626; font-size: 11px; margin-right: 4px;'>#고지의무</span></div>
+                        <p class="hook-text" style="color: #991b1b;">'설계사들도 헷갈려하는 유병자보험 고지의무 완벽해석! 새로운 판례까지 전부 정리해드립니다!' 영상은 보험탈출구 채널에서 유병자보험 및 보장 틈새 점검의 팩트 포인트(7년)를 조명합니다. 설계사도 헷갈려하는 유병자보험 고지의무 7년차 보험 전문 채널 보험탈출구에서 가장 헷갈리는 고지의무를 실제 사례와 약관을 바탕 ...</p>
+                    </div>
+                    
+                
+                
+                <div class="card-footer">
+                    
+                <span class="card-date">
+                    <span style="font-weight: 800; color: var(--yt-color); margin-right: 5px;">조회수 14,470회</span>
+                    (2주 전)
+                </span>
+                
+                    <a href="https://www.youtube.com/watch?v=nWOQSa2spYk" target="_blank" class="card-link" rel="noopener noreferrer">
+                        바로가기
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                            <polyline points="15 3 21 3 21 9"></polyline>
+                            <line x1="10" y1="14" x2="21" y2="3"></line>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+            
+
+            <div class="card youtube-card" data-category="youtube">
+                <div class="card-header">
+                    <span class="badge" style="background-color: rgba(239, 68, 68, 0.1); color: #EF4444;">
+                        유튜브 핫이슈
+                    </span>
+                    
+                    <span class='source-tag' style='color: var(--yt-color);'>보험탈출구_최적의보험설계</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+                    <h3 class="card-title">보험리모델링 "이것"놓치면 진짜 큰일납니다.. 설계사가 권유해도 절대 해지하면 안되는 보험</h3>
+                    
+                <svg class="card-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M23.498 6.163a3.003 3.003 0 0 0-2.11-2.11C19.518 3.545 12 3.545 12 3.545s-7.518 0-9.388.508a3.003 3.003 0 0 0-2.11 2.11C0 8.033 0 12 0 12s0 3.967.502 5.837a3.003 3.003 0 0 0 2.11 2.11c1.87.508 9.388.508 9.388.508s7.518 0 9.388-.508a3.003 3.003 0 0 0 2.11-2.11C24 15.967 24 12 24 12s0-3.967-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                </svg>
+                
+                </div>
+                
+                
+                    <div class="sales-hook-card" style="background-color: #fef2f2; border-left: 4px solid #ef4444;">
+                        <div style="margin-bottom: 6px;"><span class='hook-badge' style='background-color: #fee2e2; color: #dc2626; font-size: 11px; margin-right: 4px;'>#보험리모델링</span> <span class='hook-badge' style='background-color: #fee2e2; color: #dc2626; font-size: 11px; margin-right: 4px;'>#리모델링</span> <span class='hook-badge' style='background-color: #fee2e2; color: #dc2626; font-size: 11px; margin-right: 4px;'>#큰일납니다</span> <span class='hook-badge' style='background-color: #fee2e2; color: #dc2626; font-size: 11px; margin-right: 4px;'>#설계사가</span></div>
+                        <p class="hook-text" style="color: #991b1b;">'보험리모델링 "이것"놓치면 진짜 큰일납니다.. 설계사가 권유해도 절대 해지하면 안되는 보험' 영상은 보험탈출구_최적의보험설계 채널에서 보험리모델링 및 보장 틈새 점검의 팩트 포인트를 조명합니다. 보험 리모델링, 보험점검 고민하고 계신다면 설계사가 해지를 권유해도 이 보험만큼은 꼭 유지하세요! 지금은 가입하고 싶어도 가입 ...</p>
+                    </div>
+                    
+                
+                
+                <div class="card-footer">
+                    
+                <span class="card-date">
+                    <span style="font-weight: 800; color: var(--yt-color); margin-right: 5px;">조회수 3,630회</span>
+                    (22시간 전)
+                </span>
+                
+                    <a href="https://www.youtube.com/watch?v=xNz14HRbMZM" target="_blank" class="card-link" rel="noopener noreferrer">
+                        바로가기
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                            <polyline points="15 3 21 3 21 9"></polyline>
+                            <line x1="10" y1="14" x2="21" y2="3"></line>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+            
         </section>
     </div>
 
     <!-- Hidden textarea for easy clipboard copying -->
-    <textarea id="mail-text-source" style="display: none;">============================================================\n[북부영업단 아침열기 News] 2026년 07월 25일\n============================================================\n☞ 모바일 웹 카드뉴스 리포트: https://exodusy5351-lgtm.github.io/morning_briefing/\n============================================================\n★ [오늘의 한마디] 실손보험 개정과 금융당국의 보장 가이드라인 변경이 가속화될수록, 기존 가입 조건의 이점과 변경 후 보장 틈새를 비교 설명하는 보장 컨설팅이 강력한 힘을 발휘합니다.\n============================================================\n\n오늘 아침 수집된 9대 실전 테마별 팩트 요약 리포트입니다.\n\n■ 제도·정책 이슈\n  1. ‘연 2000만원 초과 일용직 건보료 부과’ 추진 논란… 복지부 “확정된 바 없어”\n     - 출처: 천지일보 | 2026-07-25 02:35\n     - 바로가기: https://news.google.com/rss/articles/CBMiakFVX3lxTFBHbHh6SmZBbFJxZWRueElNeTZYYXVpQkNZSl90Qko3Q0RPRWxwY3NEejkyV0xoa2J2eVJVem9iVnFhVVJYQks2dXQ4LTQyQ1RJMFVLeGFqZ2dGLUloRFRWbDVZQWI4c0ZmaXc?oc=5\n  2. 전국임상물리치료사연대, “도수치료 관리급여 즉각 철회하라”\n     - 출처: 의학신문 | 2026-07-24 04:54\n     - 바로가기: https://news.google.com/rss/articles/CBMia0FVX3lxTE00eEdwam9jYXVhM1VENTFIcTFlaW9RbXJWbUxRWnNuZy1rd1lCRzJjTjZjcG84VzlYUVB0cWRfZzZjc2pVRnFCOVFYRzE5X29XR1JNMlpGRlpNcDRSUUNZMjFfcmYzYlExei00?oc=5\n  3. “중증 IgA 신병증, 50년 만에 신약 나왔지만 건보 안 돼 그림의 떡”\n     - 출처: 더메디컬 | 2026-07-24 11:51\n     - 바로가기: https://news.google.com/rss/articles/CBMibkFVX3lxTE03R2U4bWd0OGR6QmFocEd4WmdDQ2FrTktDdVYtNEZHd0RNNHpKdlg1QTEtbGlOUVVzdTVha0xRY243NGhGUE5aSUVsZ0FSLUVNUnZRQnZjSkdFUGtBenhxcjlnYTk5S09leVJkZkFB0gFuQVVfeXFMTTdHZThtZ3Q4ZHpCYWhwR3haZ0NDYWtOS0N1Vi00Rkd3RE00ekp2WDVBMS1saU5RVXN1NWFrTFFjbjc0aEZQTlpJRWxnQVItRU1SdlFCdmNKR0VQa0F6eHFyOWdhOTlLT2V5UmRmQUE?oc=5\n\n■ 제도·정책 이슈\n  (오늘자 최신 동향이 발견되지 않았습니다.)\n\n■ 질병·치료비 리얼리티\n  1. 실손 있다고 했더니 "무좀 치료 480만원"\n     - 출처: 마켓인 | 2026-07-23 20:48\n     - 바로가기: https://news.google.com/rss/articles/CBMic0FVX3lxTE9kZW9XelZjV1lQZkN4b3dLMlRsQk9pZzBmZlhGQTAyREVhVHFsTjlEcEJzLW50YklHMDd0TEM2YnhCZmtUT2FETzYxejdlZ1JKcmtIQllUMEZoQTVxTkVtNERKMzY5RDg1d1FPMlY2QUNobWs?oc=5\n  2. 전이성 대장암 3차 치료제 건강보험 접근성 개선 목소리\n     - 출처: 데일리팜 | 2026-07-25 00:45\n     - 바로가기: https://news.google.com/rss/articles/CBMiVkFVX3lxTE9ETElLYWhnSENCLXRjNGR6MkxBT01VQjhEeUZEMXJtWU5paTJZS3B5UVJFSUlWZjJkTjROcmhiWHktOGlzYzk0cXVvRS1aeHBncVJiMDR3?oc=5\n  3. 저소득층 암환자 의료비 연중 지원\n     - 출처: 성주신문 | 2026-07-24 08:13\n     - 바로가기: https://news.google.com/rss/articles/CBMiV0FVX3lxTE9TTE1TLW1QWGh5NXhneWRhb3BnVHA5RkVRQURTck02NEw4azVQQ0o0LW5xQ24wMDJKNVFoWkhZcUN4bUc3dk0taEt0ZGZsem10NVZKMzNFUQ?oc=5\n\n■ 질병·치료비 리얼리티\n  (오늘자 최신 동향이 발견되지 않았습니다.)\n\n■ 제도·정책 이슈\n  (오늘자 최신 동향이 발견되지 않았습니다.)\n\n■ 시즌·이슈\n  (오늘자 최신 동향이 발견되지 않았습니다.)\n\n■ 절세·세제\n  1. 100세 시대, 종신보험은 상속 넘어 노후전략으로 [보험 200% 활용법]\n     - 출처: 네이트 | 2026-07-23 07:11\n     - 바로가기: https://news.google.com/rss/articles/CBMiU0FVX3lxTE91aXRpbXNtRGNSZUZCRFNHV3pHUkJpdHIxUjV5ak16Qnlydk5HMHhYYzZ3dTdoNGpoTmJIXzdQcW92TDdjVnlHNW9Rek01dzd2d0Nz?oc=5\n\n■ 상품·시장 동향 (★신설: 타사 신상품/절판 정보 및 삼성화재 상품과의 실전 비교 우위 분석)\n  1. 보험료 인상에도 새는 곳 못 막았다...車보험 손해율 84.5% ‘빨간불’\n     - 출처: 더퍼블릭 | 2026-07-23 06:36\n     - 바로가기: https://news.google.com/rss/articles/CBMib0FVX3lxTFBkWTE4VmJuWVYzNXhoRW1DZ0RoYzlnaEhoNmNfcW9tbVpfR0h1c1FsX0VSQi1mdmhOZTFqMTg2TVd4MHFRejZ1U2dTd0NaQUNvTmxXOGdpdTBxcGlZRHd4WkFzREd4b1dLcUphdTgwONIBb0FVX3lxTFBkWTE4VmJuWVYzNXhoRW1DZ0RoYzlnaEhoNmNfcW9tbVpfR0h1c1FsX0VSQi1mdmhOZTFqMTg2TVd4MHFRejZ1U2dTd0NaQUNvTmxXOGdpdTBxcGlZRHd4WkFzREd4b1dLcUphdTgwOA?oc=5\n  2. “과잉진료, 의사 탓만 할 수 있나”…실손보험이 평범한 의사도 비급여로 내모는 구조\n     - 출처: MEDI:GATE NEWS | 2026-07-23 20:46\n     - 바로가기: https://news.google.com/rss/articles/CBMiV0FVX3lxTE1PTzVLazc4bnNQNFpBZ3haUHdPb3M2allrcVg5X2JmME00bWVPcjNUekFiWHVKWElyYXNwNDU4aGx0RWdhaVJKOC11NnVmVkdiX2Vqang5cw?oc=5\n  3. 8월 약가 가산제도 대개편, 생존 전략은?\n     - 출처: 팜뉴스 | 2026-07-23 21:00\n     - 바로가기: https://news.google.com/rss/articles/CBMibEFVX3lxTE85b0J6Y2ZPVlI4ckpvd252ODZqRFBpTlByc2JadEJIZHhyUjdySnNiSmx3TUdhbnVtaEVYcTVURWRUQ1plTmFtTi1tTnhPN0xSXzM0UU1lM1RsZnk1MTRhYUN1MGVQZGtlQjc3Qw?oc=5\n\n■ 성공·동기부여 (★ 오늘의 영업 다짐: "우리가 전달하는 보장은 고객의 내일을 지키는 가장 가치 있고 숭고한 약속입니다.")\n  (오늘자 최신 동향이 발견되지 않았습니다.)\n\n■ 보험 블로그 & 담보 비교\n  (오늘자 최신 동향이 발견되지 않았습니다.)\n\n■ 국회청원 (비급여/급여화)\n  1. [5만달성] 소세포폐암 치료제 탈라타맙(Tarlatamab) 건강보험 급여 적용 요청에 관한 청원\n     - 출처: 국민동의청원 원문 (5만명 달성 회부) | 동의수: 52,647명 (마감: 2026-06-10)\n     - 바로가기: https://likms.assembly.go.kr/bill/billDetail.do?billId=PRC_P2I6E0F6A1X1K0N9N3Z8W0W8V8G8O0\n  2. 폰히펠-린다우 증후군(VHL) 치료제 웰리렉(벨주티판)의 건강보험 급여 적용 요청에 관한 청원\n     - 출처: 국민동의청원 원문 (동의 진행 중) | 동의수: 2,340명 (마감: 2026-08-06)\n     - 바로가기: https://petitions.assembly.go.kr/proceed/onGoingAll/556F17F3AD796CE9E064ECE7A7064E8B\n  3. 중증장애인 등 환자의 치료권을 보장하기 위한 도수치료 관리급여 정책 재검토 요청에 관한 청원\n     - 출처: 국민동의청원 원문 (동의 진행 중) | 동의수: 494명 (마감: 2026-08-01)\n     - 바로가기: https://petitions.assembly.go.kr/proceed/onGoingAll/53082F75DF4726EAE064B49691C6967B\n\n■ 유튜브 핫이슈\n  1. 비급여 암주요치료비 VS 비급여 암통합치료비, 실제 보장 사례로 비교했습니다\n     - 채널: 금융상품연구소 | 조회수 3,056회 | 3일 전\n     - 바로가기: https://www.youtube.com/watch?v=WSShPoB_P3U\n  2. 설계사들도 헷갈려하는 유병자보험 고지의무 완벽해석! 새로운 판례까지 전부 정리해드립니다!\n     - 채널: 보험탈출구 | 조회수 14,470회 | 2주 전\n     - 바로가기: https://www.youtube.com/watch?v=nWOQSa2spYk\n  3. 보험리모델링 "이것"놓치면 진짜 큰일납니다.. 설계사가 권유해도 절대 해지하면 안되는 보험\n     - 채널: 보험탈출구_최적의보험설계 | 조회수 3,631회 | 1일 전\n     - 바로가기: https://www.youtube.com/watch?v=xNz14HRbMZM\n\n------------------------------------------------------------\n본 브리핑은 매일 아침 구글 뉴스 피드 및 유튜브 데이터를 기반으로 자동 생성됩니다.\n------------------------------------------------------------</textarea>
+    <textarea id="mail-text-source" style="display: none;">============================================================
+[북부영업단 아침열기 News] 2026년 07월 25일
+============================================================
+☞ 모바일 웹 카드뉴스 리포트: https://exodusy5351-lgtm.github.io/morning_briefing/
+============================================================
+☞ 노션 백업 데이터베이스: https://notion.so/3a8db42cebe081e4a31be237ecb892ca
+============================================================
+★ [오늘의 한마디] 실손보험 개정과 금융당국의 보장 가이드라인 변경이 가속화될수록, 기존 가입 조건의 이점과 변경 후 보장 틈새를 비교 설명하는 보장 컨설팅이 강력한 힘을 발휘합니다.
+============================================================
+
+오늘 아침 수집된 9대 실전 테마별 팩트 요약 리포트입니다.
+
+■ 제도·정책 이슈
+  (오늘자 최신 동향이 발견되지 않았습니다.)
+
+■ 제도·정책 이슈
+  (오늘자 최신 동향이 발견되지 않았습니다.)
+
+■ 질병·치료비 리얼리티
+  (오늘자 최신 동향이 발견되지 않았습니다.)
+
+■ 질병·치료비 리얼리티
+  (오늘자 최신 동향이 발견되지 않았습니다.)
+
+■ 제도·정책 이슈
+  (오늘자 최신 동향이 발견되지 않았습니다.)
+
+■ 시즌·이슈
+  (오늘자 최신 동향이 발견되지 않았습니다.)
+
+■ 절세·세제
+  (오늘자 최신 동향이 발견되지 않았습니다.)
+
+■ 상품·시장 동향 (★신설: 타사 신상품/절판 정보 및 삼성화재 상품과의 실전 비교 우위 분석)
+  (오늘자 최신 동향이 발견되지 않았습니다.)
+
+■ 성공·동기부여 (★ 오늘의 영업 다짐: "우리가 전달하는 보장은 고객의 내일을 지키는 가장 가치 있고 숭고한 약속입니다.")
+  (오늘자 최신 동향이 발견되지 않았습니다.)
+
+■ 보험 블로그 & 담보 비교
+  (오늘자 최신 동향이 발견되지 않았습니다.)
+
+■ 국회청원 (비급여/급여화)
+  1. [5만달성] 소세포폐암 치료제 탈라타맙(Tarlatamab) 건강보험 급여 적용 요청에 관한 청원
+     - 출처: 국민동의청원 원문 (5만명 달성 회부) | 동의수: 52,647명 (마감: 2026-06-10)
+     - 바로가기: https://likms.assembly.go.kr/bill/billDetail.do?billId=PRC_P2I6E0F6A1X1K0N9N3Z8W0W8V8G8O0
+  2. 폰히펠-린다우 증후군(VHL) 치료제 웰리렉(벨주티판)의 건강보험 급여 적용 요청에 관한 청원
+     - 출처: 국민동의청원 원문 (동의 진행 중) | 동의수: 2,339명 (마감: 2026-08-06)
+     - 바로가기: https://petitions.assembly.go.kr/proceed/onGoingAll/556F17F3AD796CE9E064ECE7A7064E8B
+  3. 중증장애인 등 환자의 치료권을 보장하기 위한 도수치료 관리급여 정책 재검토 요청에 관한 청원
+     - 출처: 국민동의청원 원문 (동의 진행 중) | 동의수: 493명 (마감: 2026-08-01)
+     - 바로가기: https://petitions.assembly.go.kr/proceed/onGoingAll/53082F75DF4726EAE064B49691C6967B
+
+■ 유튜브 핫이슈
+  1. 비급여 암주요치료비 VS 비급여 암통합치료비, 실제 보장 사례로 비교했습니다
+     - 채널: 금융상품연구소 | 조회수 3,012회 | 3일 전
+     - 바로가기: https://www.youtube.com/watch?v=WSShPoB_P3U
+  2. 설계사들도 헷갈려하는 유병자보험 고지의무 완벽해석! 새로운 판례까지 전부 정리해드립니다!
+     - 채널: 보험탈출구 | 조회수 14,470회 | 2주 전
+     - 바로가기: https://www.youtube.com/watch?v=nWOQSa2spYk
+  3. 보험리모델링 "이것"놓치면 진짜 큰일납니다.. 설계사가 권유해도 절대 해지하면 안되는 보험
+     - 채널: 보험탈출구_최적의보험설계 | 조회수 3,630회 | 22시간 전
+     - 바로가기: https://www.youtube.com/watch?v=xNz14HRbMZM
+
+------------------------------------------------------------
+본 브리핑은 매일 아침 구글 뉴스 피드 및 유튜브 데이터를 기반으로 자동 생성됩니다.
+------------------------------------------------------------</textarea>
 
     <!-- Toast Notification -->
     <div id="toast" class="toast">메일용 브리핑 텍스트가 복사되었습니다!</div>
@@ -549,25 +794,25 @@
         const savedTheme = localStorage.getItem('theme');
         const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         
-        if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {{
+        if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
             document.body.setAttribute('data-theme', 'dark');
             updateThemeIcon('dark');
-        }} else {{
+        } else {
             document.body.setAttribute('data-theme', 'light');
             updateThemeIcon('light');
-        }}
+        }
 
-        function toggleTheme() {{
+        function toggleTheme() {
             const currentTheme = document.body.getAttribute('data-theme');
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
             document.body.setAttribute('data-theme', newTheme);
             localStorage.setItem('theme', newTheme);
             updateThemeIcon(newTheme);
-        }}
+        }
 
-        function updateThemeIcon(theme) {{
+        function updateThemeIcon(theme) {
             const iconSvg = document.getElementById('theme-icon');
-            if (theme === 'dark') {{
+            if (theme === 'dark') {
                 iconSvg.innerHTML = `
                     <circle cx="12" cy="12" r="5"></circle>
                     <line x1="12" y1="1" x2="12" y2="3"></line>
@@ -579,14 +824,14 @@
                     <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
                     <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
                 `;
-            }} else {{
+            } else {
                 iconSvg.innerHTML = `
                     <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
                 `;
-            }}
-        }}
+            }
+        }
 
-        function filterCategory(category, element) {{
+        function filterCategory(category, element) {
             const tabs = document.querySelectorAll('.tab-btn');
             tabs.forEach(tab => tab.classList.remove('active'));
             if (element) element.classList.add('active');
@@ -595,38 +840,38 @@
             let seasonalCount = 0;
             let taxCount = 0;
 
-            cards.forEach(card => {{
+            cards.forEach(card => {
                 const cardCat = card.getAttribute('data-category');
                 const badge = card.querySelector('.badge');
                 const cardLabel = badge ? badge.innerText.trim() : '';
 
-                if (category === 'all') {{
-                    if (cardCat === 'seasonal_issue') {{
+                if (category === 'all') {
+                    if (cardCat === 'seasonal_issue') {
                         seasonalCount++;
                         card.style.display = (seasonalCount <= 1) ? 'flex' : 'none';
-                    }} else if (cardCat === 'tax_benefit') {{
+                    } else if (cardCat === 'tax_benefit') {
                         taxCount++;
                         card.style.display = (taxCount <= 1) ? 'flex' : 'none';
-                    }} else {{
+                    } else {
                         card.style.display = 'flex';
-                    }}
-                }} else if (category === 'policy' && (cardLabel.includes('제도') || cardLabel.includes('정책') || cardCat === 'silson' || cardCat === 'fss_reform' || cardCat === 'reform_insurance')) {{
+                    }
+                } else if (category === 'policy' && (cardLabel.includes('제도') || cardLabel.includes('정책') || cardCat === 'silson' || cardCat === 'fss_reform' || cardCat === 'reform_insurance')) {
                     card.style.display = 'flex';
-                }} else if (category === 'reality' && (cardLabel.includes('질병') || cardLabel.includes('치료비') || cardCat === 'hospital_cost' || cardCat === 'medtech')) {{
+                } else if (category === 'reality' && (cardLabel.includes('질병') || cardLabel.includes('치료비') || cardCat === 'hospital_cost' || cardCat === 'medtech')) {
                     card.style.display = 'flex';
-                }} else if (category === 'market' && (cardLabel.includes('상품') || cardLabel.includes('시장') || cardCat === 'product_trend')) {{
+                } else if (category === 'market' && (cardLabel.includes('상품') || cardLabel.includes('시장') || cardCat === 'product_trend')) {
                     card.style.display = 'flex';
-                }} else if (category === 'motivation' && (cardLabel.includes('성공') || cardLabel.includes('동기부여') || cardCat === 'motivation')) {{
+                } else if (category === 'motivation' && (cardLabel.includes('성공') || cardLabel.includes('동기부여') || cardCat === 'motivation')) {
                     card.style.display = 'flex';
-                }} else if (cardCat === category) {{
+                } else if (cardCat === category) {
                     card.style.display = 'flex';
-                }} else {{
+                } else {
                     card.style.display = 'none';
-                }}
-            }});
-        }}
+                }
+            });
+        }
 
-        function copyMailText() {{
+        function copyMailText() {
             const mailTextSource = document.getElementById('mail-text-source');
             mailTextSource.style.display = 'block';
             mailTextSource.select();
@@ -657,4 +902,4 @@
         });
     </script>
 </body>
-    
+</html>
