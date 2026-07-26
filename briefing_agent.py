@@ -462,14 +462,24 @@ def evaluate_article_cot(title, body=""):
 
     # STEP 5. 타사 상품 홍보 및 상품 소개 기사 판별 (is_promo)
     other_insurers = ["한화생명", "교보생명", "동양생명", "DB손보", "DB손해보험", "현대해상", "KB손보", "KB손해보험", "메리츠", "메리츠화재", "흥국화재", "롯데손보", "신한라이프", "라이나생명", "AIA생명", "하나손보"]
-    promo_keywords = ["출시", "선뵈", "신상품", "보장 강화", "배타적사용권", "가입자 끌어", "3단 보장", "3단보장", "특약 신설", "혜택 강화", "상품 선보여"]
-    
+    # ★ promo_keywords: 타사 보험사명 + 이 중 하나라도 있으면 is_promo=True 후보
+    promo_keywords = [
+        "출시", "개정 출시", "론칭", "내놨", "내놓", "출시 예정",
+        "선뵈", "신상품", "보장 강화", "배타적사용권",
+        "가입자 끌어", "3단 보장", "3단보장", "특약 신설",
+        "혜택 강화", "상품 선보여", "상품 개편", "상품 리뉴얼"
+    ]
+    # ★ explicit_product_kw: 타사 사명 없어도 단독으로 is_promo=True
+    explicit_product_kw_list = [
+        "3단 보장", "3단보장", "신상품", "배타적사용권", "보장 강화 출시"
+    ]
+
     is_promo = False
     if adopted:
         has_other_insurer = any(ins in text for ins in other_insurers)
         has_promo_kw = any(pk in text for pk in promo_keywords)
-        explicit_product_kw = any(ep in text for ep in ["3단 보장", "3단보장", "신상품", "배타적사용권", "보장 강화 출시"])
-        
+        explicit_product_kw = any(ep in text for ep in explicit_product_kw_list)
+
         if (has_other_insurer and has_promo_kw) or explicit_product_kw:
             if "삼성화재" not in text:
                 is_promo = True
