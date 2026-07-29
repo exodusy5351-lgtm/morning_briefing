@@ -13,7 +13,11 @@ import hashlib
 from html.parser import HTMLParser
 import time
 import base64
+import concurrent.futures
+import threading
 
+_LLM_POOL = concurrent.futures.ThreadPoolExecutor(max_workers=4)
+_QUOTA_LOCK = threading.Lock()
 # =========================================================================
 # Gmail API 연동 함수 (지점장 아침열기 메일 연동 모듈)
 # =========================================================================
@@ -22,6 +26,9 @@ def fetch_latest_morning_email():
     Gmail API를 이용해 가장 최근 '아침열기' 또는 '영업방향' 메일을 읽어와 본문을 반환합니다.
     최초 1회 실행 시 웹 브라우저가 열리며 구글 계정 인증(token.json 생성)이 진행됩니다.
     """
+    if CI_MODE:
+        print("[CI] Gmail 연동 생략")
+        return None
     creds = None
     token_path = 'token_gmail.json'
     credentials_path = 'credentials.json'
@@ -97,14 +104,33 @@ def fetch_latest_morning_email():
         return None
 
 # =========================================================================
+# .env 파일 즉시 로딩 (모든 환경변수 설정보다 가장 먼저 실행)
+# =========================================================================
+def _load_dotenv_early():
+    """모듈 임포트 직후 .env 전체를 os.environ에 로딩 (로컬 실행 대응)"""
+    env_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+    if os.path.exists(env_file):
+        try:
+            with open(env_file, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if "=" in line and not line.startswith("#"):
+                        k, v = line.split("=", 1)
+                        k, v = k.strip(), v.strip().strip('"').strip("'")
+                        if k and v and k not in os.environ:
+                            os.environ[k] = v
+        except Exception:
+            pass
+_load_dotenv_early()  # ← 모듈 로드 즉시 실행
+
+# =========================================================================
 # 브리핑 기본 타이틀 정의
 # =========================================================================
 BRIEFING_TITLE = "북부영업단 아침열기 News"
-# 1. Notion API 프라이빗 통합 토큰 (GitHub Secrets → 환경변수로 읽음)
-NOTION_TOKEN = os.environ.get("NOTION_API_KEY", "")
-
-# 2. 노션 데이터베이스 32자리 ID (GitHub Secrets → 환경변수로 읽음)
-NOTION_DATABASE_ID = os.environ.get("NOTION_DATABASE_ID", "")
+# Notion 토큰/DB ID: 함수 내부에서 동적으로 읽음 (publish_to_notion_db 참고)
+# → 모듈 초기화 시점이 아니라 실제 호출 직전에 os.environ 참조
+NOTION_TOKEN = ""        # 하위 호환용 더미 — 실제값은 publish_to_notion_db() 내부에서 로딩
+NOTION_DATABASE_ID = "" # 하위 호환용 더미 — 실제값은 publish_to_notion_db() 내부에서 로딩
 
 
 # =========================================================================
@@ -282,55 +308,62 @@ def generate_daily_insight(data):
                 top_facts.append(f"- [{item.get('category_label', '뉴스')}] {t} (영업포인트: {ins[:60]})")
 
     if top_facts:
-        api_key = get_gemini_api_key()
-        if api_key:
-            try:
-                from google import genai
-                from google.genai import types
-                import concurrent.futures
+        # --no-gemini 플래그 시 Gemini 호출 완전 생략 → 폴백으로 즉시 이동
+        if DISABLE_GEMINI_FLAG:
+            print("      [Market Insight] --no-gemini 플래그: Gemini 호출 건너뜀 → 폴백 로테이션 구동")
+        else:
+            api_key = get_gemini_api_key()
+            if api_key:
+                try:
+                    from google import genai
+                    from google.genai import types
+                    import concurrent.futures
 
-                client = genai.Client(api_key=api_key)
-                facts_str = "\n".join(top_facts[:6])
+                    client = genai.Client(api_key=api_key)
+                    facts_str = "\n".join(top_facts[:6])
 
-                prompt = f"""
-                당신은 보험 영업 현장을 지휘하는 명쾌하고 날카로운 최고 세일즈 전략가입니다.
-                오늘 아침 수집된 최신 보험·의료·제도·시즌 팩트 기사들을 바탕으로, 삼성화재 설계사(RC)들이 오늘 아침 아침열기 시간에 마음에 새길 1~2문장의 강력한 '오늘의 한마디 (Market Insight)'를 생성하십시오.
+                    prompt = f"""
+                    당신은 보험 영업 현장을 지휘하는 명쾌하고 날카로운 최고 세일즈 전략가입니다.
+                    오늘 아침 수집된 최신 보험·의료·제도·시즌 팩트 기사들을 바탕으로, 삼성화재 설계사(RC)들이 오늘 아침 아침열기 시간에 마음에 새길 1~2문장의 강력한 '오늘의 한마디 (Market Insight)'를 생성하십시오.
 
-                [오늘 아침 주요 팩트 기사 목록]
-                {facts_str}
+                    [오늘 아침 주요 팩트 기사 목록]
+                    {facts_str}
 
-                [작성 조건]
-                1. 오늘 수집된 기사들 중 가장 임팩트 있는 이슈(예: 폭염/절세/비급여 신약/실손 개정/수술비 등)의 팩트를 1개 직접 자연스럽게 녹여내십시오.
-                2. 진상 고객 상담이나 틈새 보장 점검에 자신감을 주며, 설계사의 보장 전달 가치를 격려하는 매일 색다르고 전문적인 톤으로 작성하십시오.
-                3. 문장 시작에 '★ [오늘의 한마디] ' 형식을 반드시 유지하십시오.
+                    [작성 조건]
+                    1. 오늘 수집된 기사들 중 가장 임팩트 있는 이슈(예: 폭염/절세/비급여 신약/실손 개정/수술비 등)의 팩트를 1개 직접 자연스럽게 녹여내십시오.
+                    2. 진상 고객 상담이나 틈새 보장 점검에 자신감을 주며, 설계사의 보장 전달 가치를 격려하는 매일 색다르고 전문적인 톤으로 작성하십시오.
+                    3. 문장 시작에 '★ [오늘의 한마디] ' 형식을 반드시 유지하십시오.
 
-                [출력 JSON 형식]
-                {{
-                  "market_insight": "★ [오늘의 한마디] (오늘자 팩트를 반영한 1~2문장)"
-                }}
-                """
+                    [출력 JSON 형식]
+                    {{
+                      "market_insight": "★ [오늘의 한마디] (오늘자 팩트를 반영한 1~2문장)"
+                    }}
+                    """
 
-                def call_gemini_insight():
-                    return client.models.generate_content(
-                        model='gemini-3.5-flash',
-                        contents=prompt,
-                        config=types.GenerateContentConfig(
-                            response_mime_type="application/json",
-                            temperature=0.4,
-                        ),
-                    )
+                    def call_gemini_insight():
+                        return client.models.generate_content(
+                            model='gemini-3.5-flash',
+                            contents=prompt,
+                            config=types.GenerateContentConfig(
+                                response_mime_type="application/json",
+                                temperature=0.4,
+                            ),
+                        )
 
-                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                    future = executor.submit(call_gemini_insight)
-                    response = future.result(timeout=5.0)
+                    future = _LLM_POOL.submit(call_gemini_insight)
+                    try:
+                        response = future.result(timeout=8.0)
+                    except concurrent.futures.TimeoutError:
+                        future.cancel()
+                        raise
 
-                res_data = json.loads(response.text)
-                insight_res = res_data.get("market_insight", "").strip()
-                if insight_res and "오늘의 한마디" in insight_res:
-                    print(f"      [Gemini 3.5 Flash] 오늘자 팩트 종합 동적 Market Insight 생성 성공!")
-                    return insight_res
-            except Exception as e:
-                print(f"      [Market Insight Gemini 동적 생성 실패] {e} -> 폴백 로테이션 구동")
+                    res_data = json.loads(response.text)
+                    insight_res = res_data.get("market_insight", "").strip()
+                    if insight_res and "오늘의 한마디" in insight_res:
+                        print(f"      [Gemini 3.5 Flash] 오늘자 팩트 종합 동적 Market Insight 생성 성공!")
+                        return insight_res
+                except Exception as e:
+                    print(f"      [Market Insight Gemini 동적 생성 실패] {e} -> 폴백 로테이션 구동")
 
     # 3순위: Gemini 미구동 시 10가지 다채로운 폴백 문구 중 날짜(day) 기준 로테이션 선택 (중복 방지)
     fallback_pool = [
@@ -349,43 +382,6 @@ def generate_daily_insight(data):
     day_idx = datetime.now().day % len(fallback_pool)
     return fallback_pool[day_idx]
 
-def generate_news_summary(title, cat_id):
-    """기사 제목을 분석하여 본문을 미러링하지 않고, 실제 핵심 정보와 영업용 셀링 포인트를 2줄로 깔끔히 요약"""
-    # 1. 전처리: 대괄호 및 노이즈 제거
-    clean_title = re.sub(r'\[.*?\]|\(.*?\)', '', title).strip()
-    
-    # 2. 핵심 키워드 추출 (제목 중복 표기 및 미러링 방지)
-    words = clean_title.split()
-    nouns = []
-    for word in words:
-        clean_word = re.sub(r'[^a-zA-Z0-9가-힣]', '', word).strip()
-        if len(clean_word) >= 2 and clean_word not in ["뉴스", "포토", "속보", "게시판", "추천"]:
-            nouns.append(clean_word)
-            
-    subj1 = nouns[0] if len(nouns) > 0 else "보험시장"
-    subj2 = nouns[1] if len(nouns) > 1 else "제도개선"
-    
-    # 1. 실제 기사의 핵심 요약문 (미러링 없이 키워드로 재조합)
-    summary_text = ""
-    if cat_id == "silson":
-        summary_text = f"정부당국과 업계의 {subj1} 가이드라인 제정 및 {subj2} 개정에 따른 실손보험금 누수 차단 대책의 세부 추진 현황을 주로 다루고 있습니다."
-    elif cat_id == "hospital_cost":
-        summary_text = f"대학병원의 {subj1} 치료 과정 및 고가 비급여 {subj2} 처방 비율 상승으로 환자가 실제 부담하는 본인부담액 실태를 심층 고찰합니다."
-    elif cat_id == "caregiving":
-        summary_text = f"초고령화 진입에 따른 {subj1} 일당 급증 실태와 간병 {subj2} 제도 시범 사업에 대한 지원책 및 가계 부담 추이를 설명합니다."
-    elif cat_id == "medtech":
-        summary_text = f"암환자 생존율을 높이는 신치료 기술인 {subj1}의 성과 및 고액 비급여 {subj2}의 약제비 등재와 관련된 실효성을 보도합니다."
-    elif cat_id == "reform_insurance":
-        summary_text = f"의정 갈등 장기화에 따른 {subj1} 운영 대란과 공공 {subj2} 재정 악화로 인한 향후 보장 기준 변경 리스크를 전달합니다."
-    elif cat_id == "product_trend":
-        summary_text = f"경쟁사들의 {subj1} 한도 축소 경향과 보험사별 {subj2} 개편 동향을 비교 분석하여 현재 가장 유리한 상품 정보를 요약합니다."
-    elif cat_id == "motivation":
-        summary_text = f"현장에서 큰 성과를 낸 설계사들의 {subj1} 상담 성공 미담과 차별화된 {subj2} 관리 기법의 실전 사례를 공유합니다."
-    elif cat_id == "ai_semiconductor":
-        summary_text = f"네이버/티스토리 전문 설계사의 {subj1} 상품 비교 및 {subj2} 특약 조건 분석을 바탕으로 실전 비교 우위 포인트를 분석합니다."
-    else:
-        summary_text = f"{subj1} 및 {subj2} 관련 최근 의료/보험업계의 변화 추이와 이에 대응하는 제도 개편 방향을 분석합니다."
-
 def generate_news_summary(title, cat_id, summary_text=""):
     """
     [전속 & GA 공용 high-credibility 팩트 중심 요약 시스템]
@@ -402,7 +398,7 @@ def generate_news_summary(title, cat_id, summary_text=""):
         # 제목 기반의 정갈한 팩트 설명
         fact_summary = f"본 기사는 '{clean_title}' 관련 최신 시장 및 정책 동향의 핵심 팩트를 담고 있습니다."
 
-def evaluate_article_cot(title, body=""):
+def evaluate_article_cot(title, body="", hook=True):
     """
     보험설계사 팀('북부영업단') 아침 뉴스 큐레이션용 6단계 Chain of Thought (CoT) 평가 엔진
     카테고리를 먼저 정하지 않고, 영업 관련성 체크리스트(a~f)와 제외 조건부터 검증한 뒤 채택 여부 및 카테고리를 최종 부착합니다.
@@ -504,7 +500,7 @@ def evaluate_article_cot(title, body=""):
 
     # STEP 6. 영업포인트 생성 (채택된 기사만 - is_promo 및 카테고리 프롬프트 분기 처리)
     sales_hook = ""
-    if adopted:
+    if adopted and hook:
         # 1차 시도: Gemini 3.5 Flash CoT 기반 팩트 추출 영업 화법 생성
         gemini_hook = generate_sales_hook_gemini(clean_title, body, is_promo=is_promo, category=category)
         if gemini_hook:
@@ -570,10 +566,12 @@ def generate_sales_hook_gemini(title: str, article_body: str, is_promo: bool = F
         print(f"      [디버그 플래그 --no-gemini] Gemini API 호출 건너뜀 -> 메인 스마트 파서 구동")
         return ""
 
-    if GEMINI_QUOTA_USED >= GEMINI_QUOTA_LIMIT:
-        print(f"      [Gemini 안전 쿼터 소진 ({GEMINI_QUOTA_USED}/{GEMINI_QUOTA_LIMIT}회)] -> 메인 스마트 파서 구동")
-        GEMINI_STATS["fallback_api_failed"] += 1
-        return ""
+    with _QUOTA_LOCK:
+        if GEMINI_QUOTA_USED >= GEMINI_QUOTA_LIMIT:
+            print(f"      [Gemini 안전 쿼터 소진 ({GEMINI_QUOTA_USED}/{GEMINI_QUOTA_LIMIT}회)] -> 메인 스마트 파서 구동")
+            GEMINI_STATS["fallback_api_failed"] += 1
+            return ""
+        GEMINI_QUOTA_USED += 1
     
     api_key = get_gemini_api_key()
     text_content = (title + "\n" + (article_body or "")).strip()
@@ -694,17 +692,17 @@ def generate_sales_hook_gemini(title: str, article_body: str, is_promo: bool = F
         # Rate Limit (429) 대비 최대 2회 지연 재시도 (Retry)
         for attempt in range(2):
             try:
-                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                    future = executor.submit(call_gemini)
-                    response = future.result(timeout=5.0)
-
+                future = _LLM_POOL.submit(call_gemini)
+                try:
+                    response = future.result(timeout=8.0)
+                except concurrent.futures.TimeoutError:
+                    future.cancel()
+                    raise
                 data = json.loads(response.text)
                 fact = data.get("fact_extracted")
                 hook = data.get("sales_hook")
 
                 if fact and str(fact).lower() != "null" and hook:
-                    GEMINI_STATS["gemini_success"] += 1
-                    GEMINI_QUOTA_USED += 1
                     print(f"      [Gemini 3.5 Flash (쿼터 사용 {GEMINI_QUOTA_USED}/{GEMINI_QUOTA_LIMIT})] 화법 생성 성공{' (과잉진료/손해율톤)' if is_overtreatment else ''}: '{title[:20]}...'")
                     return hook.replace('💡 현장 화법 포인트: ', '').replace('💡 현장 화법 포인트:', '').replace('💡 경쟁사 상품 참고 메모: ', '').replace('💡 경쟁사 상품 참고 메모:', '').strip()
                 break
@@ -730,6 +728,8 @@ def generate_sales_hook_gemini(title: str, article_body: str, is_promo: bool = F
 GEMINI_QUOTA_LIMIT = 16
 GEMINI_QUOTA_USED = 0
 DISABLE_GEMINI_FLAG = "--no-gemini" in sys.argv
+CI_MODE = "--ci" in sys.argv
+DRY_RUN = "--dry-run" in sys.argv
 
 def generate_smart_fact_hook(title: str, body: str, category: str, is_promo: bool = False) -> str:
     """
@@ -922,6 +922,7 @@ def fetch_article_body(url, max_chars=400, timeout=4):
 
 
 def analyze_youtube_video(title, description, channel=""):
+    global GEMINI_QUOTA_USED
     api_key = get_gemini_api_key()
     clean_title = re.sub(r'\[.*?\]|\(.*?\)', '', title).strip()
     
@@ -929,6 +930,18 @@ def analyze_youtube_video(title, description, channel=""):
         "이것", "진짜", "놓치면", "필수", "추천", "영상", "분석", "꿀팁", "지금", "오늘", "내일",
         "방법", "이유", "이유는", "가지", "가지고", "하는", "통해", "대한", "관련"
     }
+
+    if DISABLE_GEMINI_FLAG:
+        print(f"      [디버그 플래그 --no-gemini] 유튜브 요약 Gemini 호출 건너뜀")
+        api_key = None
+
+    if api_key and clean_title:
+        with _QUOTA_LOCK:
+            if GEMINI_QUOTA_USED >= GEMINI_QUOTA_LIMIT:
+                print(f"      [Gemini 안전 쿼터 소진 ({GEMINI_QUOTA_USED}/{GEMINI_QUOTA_LIMIT}회)] 유튜브 요약 폴백")
+                api_key = None
+            else:
+                GEMINI_QUOTA_USED += 1
 
     if api_key and clean_title:
         try:
@@ -1165,7 +1178,24 @@ def fetch_category_news(cat_id, info, limit=8):
         root = ET.fromstring(xml_data)
         items = []
         
-        for item in root.findall('.//item'):
+        def _pubdate_key(it):
+            el = it.find('pubDate')
+            try:
+                d = parsedate_to_datetime(el.text)
+                if d.tzinfo is None:
+                    d = d.replace(tzinfo=timezone.utc)
+                return d.timestamp()
+            except Exception:
+                return 0.0
+
+        _raw_items = root.findall('.//item')
+        try:
+            _raw_items = sorted(_raw_items, key=_pubdate_key, reverse=True)
+        except Exception:
+            pass
+        _raw_items = _raw_items[:limit * 6]
+
+        for item in _raw_items:
             title_el = item.find('title')
             link_el = item.find('link')
             pub_date_el = item.find('pubDate')
@@ -1270,6 +1300,12 @@ def fetch_category_news(cat_id, info, limit=8):
                 continue
                 
             # 기사 본문 크롤링 - Google RSS 리다이렉트 해원 후 og:description / 네이버 모바일 블로그 파서 구동
+            if cat_id not in ["ai_semiconductor", "assembly_petition", "youtube"]:
+                _pre = evaluate_article_cot(clean_title, "", hook=False)
+                if not _pre["adopted"] and len(_pre["checklist_hits"]) == 0:
+                    print(f"      [사전탈락] 제목 단계 영업관련성 0 → 크롤링 생략: {clean_title[:30]}")
+                    continue
+
             print(f"        [본문크롤링] {clean_title[:30]}...")
             real_url = resolve_google_news_url(link) or link
 
@@ -1366,6 +1402,9 @@ def fetch_category_news(cat_id, info, limit=8):
                 "badge_bg": badge_bg,
                 "is_promo": cot_eval.get("is_promo", False)
             })
+
+            if len(items) >= limit:
+                break
             
         items.sort(key=lambda x: x["datetime"] if x["datetime"] else datetime.min, reverse=True)
         return items[:limit]
@@ -1428,73 +1467,6 @@ def calculate_sales_relevance_score(item):
     item["sales_score"] = score
     item["score_details"] = ", ".join(score_details) if score_details else "기본(0)"
     return score
-
-
-def compile_briefing_data():
-    # 모든 테마별 실시간 수집 데이터 통합 및 정제
-    all_cat_news = []
-    
-    for cat_id, info in CATEGORIES.items():
-        if cat_id == "youtube":
-            continue
-        c_items = fetch_category_news(cat_id, info, limit=8)
-        all_cat_news.extend(c_items)
-
-    # 48시간 유튜브 트렌드 데이터 수집
-    top_youtube = fetch_youtube_trends()
-    
-    # 중복 제거 및 영업 유용성 스코어 계산
-    flat_items = []
-    seen_titles = set()
-    for item in all_cat_news:
-        t = item["title"]
-        if t not in seen_titles:
-            seen_titles.add(t)
-            calculate_sales_relevance_score(item)
-            flat_items.append(item)
-
-    # 테마별 그룹화 및 영업 스코어 기반 우선순위 선택
-    raw_cat_groups = {cat_id: [] for cat_id in CATEGORIES.keys()}
-    for item in flat_items:
-        title_lower = item["title"].lower()
-        if any(kw in title_lower for kw in ["후원", "영화제", "기부", "봉사", "장학금"]):
-            if "삼성화재" not in title_lower and "삼성화재" not in item.get("source", "").lower():
-                continue
-        raw_cat_groups[item["category_id"]].append(item)
-
-    all_data = {cat_id: [] for cat_id in CATEGORIES.keys()}
-    all_data["youtube"] = top_youtube
-    all_data["threads_trend"] = fetch_threads_hot_issues()
-    all_data["assembly_petition"] = fetch_assembly_petitions()
-    
-    for cat_id, cat_items in raw_cat_groups.items():
-        if cat_id in ["youtube", "threads_trend", "assembly_petition"]:
-            continue
-
-        # 영업 유용성 스코어(sales_score) 내림차순 정렬
-        cat_items.sort(key=lambda x: (x.get("sales_score", 0), x.get("datetime") or datetime.min), reverse=True)
-
-        pure_facts = [it for it in cat_items if not it.get("is_promo")]
-        promo_items = [it for it in cat_items if it.get("is_promo")]
-
-        selected = []
-        if len(pure_facts) >= 3:
-            # 순수 팩트 기사가 3건 이상 확보되면 타사 홍보 기사 전면 제외!
-            selected = pure_facts[:3]
-            print(f"      [{cat_id}] 순수 팩트 기사 {len(pure_facts)}건 확보 (최고점 {selected[0]['sales_score']}점) -> 타사 홍보 기사 전면 제외")
-        else:
-            # 순수 팩트 기사가 부족할 경우 타사 홍보 기사는 '최대 1건(cap=1)'만 최고점 선택 보충
-            selected = pure_facts
-            if promo_items:
-                # 최고점 홍보 기사 1건만 선택
-                selected.append(promo_items[0])
-                print(f"      [{cat_id}] 순수 팩트 {len(pure_facts)}건 + 최고점 타사 홍보 기사 1건(cap=1 선택, 점수: {promo_items[0]['sales_score']}점: '{promo_items[0]['title'][:25]}...') 보충")
-            else:
-                print(f"      [{cat_id}] 순수 팩트 {len(pure_facts)}건 확보")
-
-        all_data[cat_id] = selected
-        
-    return all_data
 
 
 def is_within_14_days(published_text):
@@ -1847,11 +1819,22 @@ def compile_briefing_data():
     seen_titles = set()
     
     # 1. 뉴스 카테고리별 기사 수집 (한도 10개까지 넉넉히 수집)
-    for cat_id, info in CATEGORIES.items():
-        if cat_id == "youtube":
-            continue
-            
-        raw_items = fetch_category_news(cat_id, info, limit=10)
+    import concurrent.futures
+    _targets = [(cid, cinfo) for cid, cinfo in CATEGORIES.items() if cid != "youtube"]
+    _results = {}
+    print(f"[정보] 테마 {len(_targets)}개 병렬 수집 시작...")
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as _ex:
+        _futs = {_ex.submit(fetch_category_news, cid, cinfo, 10): cid for cid, cinfo in _targets}
+        for _f in concurrent.futures.as_completed(_futs, timeout=900):
+            _cid = _futs[_f]
+            try:
+                _results[_cid] = _f.result()
+            except Exception as e:
+                print(f"[오류] '{_cid}' 수집 실패: {e}")
+                _results[_cid] = []
+
+    for cat_id, info in _targets:
+        raw_items = _results.get(cat_id, [])
         for item in raw_items:
             norm_title = "".join(item["title"].split()).lower()
             if item["link"] in seen_links or norm_title in seen_titles:
@@ -2999,6 +2982,9 @@ def append_notion_children(page_id, blocks, headers):
 
 def push_to_github():
     """deploy 폴더의 index.html 파일을 깃허브 레포지토리에 자동으로 커밋 및 푸시하여 웹 주소 자동 갱신"""
+    if CI_MODE:
+        print("[CI] push_to_github 생략 (Actions 가 직접 커밋)")
+        return
     import subprocess
     deploy_dir = "deploy"
     if not os.path.exists(os.path.join(deploy_dir, ".git")):
@@ -3019,6 +3005,9 @@ def push_to_github():
 
 def save_to_google_sheet(data, spreadsheet_id):
     """수집된 데이터를 구글 스프레드시트에 행(Row) 단위로 깔끔하게 누적 저장 (중복 배제)"""
+    if CI_MODE:
+        print("[CI] Google Sheet 저장 생략")
+        return
     if not spreadsheet_id:
         print("[정보] GOOGLE_SPREADSHEET_ID 설정이 비어 있습니다. 구글 시트 연동을 건너뜁니다.")
         return
@@ -3140,15 +3129,25 @@ def main():
         for item in items:
             if item.get("link"):
                 published_urls.append(item.get("link"))
-    save_recent_urls(published_urls)
-    
+    if not DRY_RUN:
+        save_recent_urls(published_urls)
+    else:
+        print("[DRY-RUN] 최근 URL 중복차단 이력 저장 생략")
+
     # 1.5. 구글 스프레드시트 누적 저장 연동
-    save_to_google_sheet(data, GOOGLE_SPREADSHEET_ID)
-    
+    if not DRY_RUN:
+        save_to_google_sheet(data, GOOGLE_SPREADSHEET_ID)
+    else:
+        print("[DRY-RUN] 구글 스프레드시트 저장 생략")
+
     # 2. 노션용 블록 생성 및 노션 데이터베이스 페이지 발행
     notion_blocks = build_notion_blocks(data)
-    notion_url = publish_to_notion_db(notion_blocks, today_str)
-    
+    if not DRY_RUN:
+        notion_url = publish_to_notion_db(notion_blocks, today_str)
+    else:
+        print("[DRY-RUN] 노션 페이지 발행 생략")
+        notion_url = None
+
     # 3. 결과 포맷 빌드 (노션 링크 연동 포함)
     print("[정보] 메일용 텍스트 브리핑 렌더링 중...")
     mail_text = build_mail_text(data, today_str, notion_url)
@@ -3161,7 +3160,7 @@ def main():
     html_filename = f"morning_briefing_{file_suffix}.html"
     
     # 넷리파이(Netlify) 업로드용 deploy 폴더 자동 구성
-    deploy_dir = "deploy"
+    deploy_dir = "." if CI_MODE else "deploy"
     if not os.path.exists(deploy_dir):
         os.makedirs(deploy_dir)
     deploy_html_path = os.path.join(deploy_dir, "index.html")
@@ -3198,7 +3197,10 @@ def main():
         print(f"[오류] 넷리파이 배포용 파일 생성 실패: {e}")
         
     # 깃허브 자동 배포 트리거 호출 (deploy 폴더의 최신 index.html 푸시)
-    push_to_github()
+    if not DRY_RUN:
+        push_to_github()
+    else:
+        print("[DRY-RUN] 깃허브 자동 배포 생략")
     
     elapsed = time.time() - start_t
     tot = GEMINI_STATS["total_articles"]
