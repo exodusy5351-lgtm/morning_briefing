@@ -2065,11 +2065,11 @@ def build_html_card_news(data, today_str, mail_text, notion_url=None):
                 continue
 
             card_html = (
-                f'<div class="card {yt_class}" data-category="{cat_id}">'
+                f'<div class="card {yt_class}" data-category="{cat_id}" style="cursor: pointer;" onclick="window.open(\'{item["link"]}\', \'_blank\', \'noopener,noreferrer\')">'
                 f'<div class="card-header"><span class="badge" style="{badge_style}">{item["category_label"]}</span>{promo_badge_html}{source_tag_html}</div>'
                 f'<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;"><h3 class="card-title">{item["title"]}</h3>{icon_svg}</div>'
                 f'{comp_fact_html}{yt_analysis_html}{threads_analysis_html}{news_analysis_html}'
-                f'<div class="card-footer">{date_section}<a href="{item["link"]}" target="_blank" class="card-link" rel="noopener noreferrer">바로가기 -></a></div></div>'
+                f'<div class="card-footer">{date_section}<a href="{item["link"]}" target="_blank" class="card-link" rel="noopener noreferrer" onclick="event.stopPropagation()">바로가기 -></a></div></div>'
             )
             card_elements.append(card_html)
             
@@ -3172,11 +3172,8 @@ def main():
     dst_threads = os.path.join(deploy_data_dir, "threads_hot.json")
     if os.path.exists(src_threads):
         import shutil
-        if os.path.abspath(src_threads) == os.path.abspath(dst_threads):
-            print(f"[정보] 원본과 대상 경로가 동일하여 복사를 생략합니다.")
-        else:
-            shutil.copy(src_threads, dst_threads)
-            print(f"[완료] deploy/data/threads_hot.json 복사 완료.")
+        shutil.copy(src_threads, dst_threads)
+        print(f"[완료] deploy/data/threads_hot.json 복사 완료.")
 
     try:
         with open(txt_filename, "w", encoding="utf-8") as f:
