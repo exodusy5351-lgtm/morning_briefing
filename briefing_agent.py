@@ -1912,19 +1912,11 @@ def compile_briefing_data():
         pure_facts = [it for it in cat_items if not it.get("is_promo")]
         promo_items = [it for it in cat_items if it.get("is_promo")]
 
-        selected = []
-        if len(pure_facts) >= 3:
-            # 순수 팩트 기사가 3건 이상 확보되면 타사 홍보 기사 전면 제외!
-            selected = pure_facts[:3]
-            print(f"      [{cat_id}] 순수 팩트 기사 {len(pure_facts)}건 확보 (최고점 {selected[0].get('sales_score', 0)}점) -> 타사 홍보 기사 {len(promo_items)}건 전면 제외")
+        selected = pure_facts[:3]
+        if promo_items:
+            print(f"      [{cat_id}] 순수 팩트 기사 {len(pure_facts)}건 확보 -> 타사 홍보 기사 {len(promo_items)}건 전면 제외")
         else:
-            # 순수 팩트 기사가 부족하더라도 타사 홍보 기사는 '최대 1건(cap=1)'만 최고점 선택 보충!
-            selected = pure_facts
-            if promo_items:
-                selected.append(promo_items[0])
-                print(f"      [{cat_id}] 순수 팩트 {len(pure_facts)}건 + 최고점 타사 홍보 기사 1건(cap=1 선택, 점수: {promo_items[0].get('sales_score', 0)}점: '{promo_items[0]['title'][:25]}...') 보충")
-            else:
-                print(f"      [{cat_id}] 순수 팩트 {len(pure_facts)}건 확보")
+            print(f"      [{cat_id}] 순수 팩트 {len(pure_facts)}건 확보")
 
         all_data[cat_id] = selected
         
