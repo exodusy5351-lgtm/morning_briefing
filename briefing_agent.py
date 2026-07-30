@@ -3172,8 +3172,11 @@ def main():
     dst_threads = os.path.join(deploy_data_dir, "threads_hot.json")
     if os.path.exists(src_threads):
         import shutil
-        shutil.copy(src_threads, dst_threads)
-        print(f"[완료] deploy/data/threads_hot.json 복사 완료.")
+        if os.path.abspath(src_threads) == os.path.abspath(dst_threads):
+            print(f"[정보] 원본과 대상 경로가 동일하여 복사를 생략합니다.")
+        else:
+            shutil.copy(src_threads, dst_threads)
+            print(f"[완료] deploy/data/threads_hot.json 복사 완료.")
 
     try:
         with open(txt_filename, "w", encoding="utf-8") as f:
