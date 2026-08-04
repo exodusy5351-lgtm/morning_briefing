@@ -1,5 +1,4 @@
 import urllib.request
-import urllib.parse
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
 from email.utils import parsedate_to_datetime
@@ -1064,6 +1063,10 @@ def validate_theme_domain(cat_id, text):
         required = ["주의", "환자", "부상", "치료", "병원", "폭염", "질환", "안전", "건강", "장마", "태풍", "온열", "감기", "낙상"]
     elif cat_id == "tax_benefit": # 절세·세제
         required = ["상속세", "증여세", "종신보험", "연말정산", "세액공제", "절세", "세제", "보험", "플랜"]
+    elif cat_id == "ai_semiconductor": # 보험 블로그 & 담보 비교
+        if any(lk in t_lower for lk in ["주택연금", "역모기지", "주담대", "예금", "적금", "펀드"]):
+            return False
+        required = ["보험", "담보", "특약", "보장", "가입", "실손", "암보험", "종신", "정기보험"]
     else:
         return True
         
