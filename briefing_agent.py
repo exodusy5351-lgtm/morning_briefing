@@ -58,7 +58,7 @@ def fetch_latest_morning_email():
 
         service = build('gmail', 'v1', credentials=creds)
 
-        # '아침열기' 또는 '영업' 키워드가 들어간 최신 메일 1건 검색
+        # '아침열기' 또는 '영업' 키워드가 들어간 최신 메일 1건 검색python -m py_compile briefing_agent.py
         query = 'subject:(아침열기 OR 영업방향 OR 절판 OR 6월 OR 7월)'
         results = service.users().messages().list(userId='me', q=query, maxResults=3).execute()
         messages = results.get('messages', [])
@@ -1051,6 +1051,9 @@ def validate_theme_domain(cat_id, text):
         if b in t_lower:
             return False
 
+    # 부고 / 인사 / 동정 기사 원천 차단
+    if any(ex in t_lower for ex in ["부친상", "모친상", "장인상", "장모상", "부고", "동정", "발령", "청첩", "결혼"]):
+        return False
     if cat_id in ["hospital_cost", "medtech"]: # 질병·치료비 리얼리티
         required = ["보험", "질병", "치료", "진료", "병원", "약", "급여", "환자", "수술", "의료", "암", "비급여", "본인부담", "치료비"]
     elif cat_id in ["silson", "fss_reform", "reform_insurance"]: # 제도·정책 이슈
