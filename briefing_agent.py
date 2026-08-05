@@ -1114,27 +1114,36 @@ def is_outdated_content(title):
 RECENT_URLS_FILE = "recent_published_urls.json"
 
 def load_recent_urls():
-    # 최근 5일간 노출되었던 기사 URL 목록 로드
+    # 최근 5일간 노출되었던 기사 URL 및 제목 목록 로드 (URL 완전일치 + 제목 유사도 이중 체크용)
     if not os.path.exists(RECENT_URLS_FILE):
-        return set()
+        return set(), []
     try:
         with open(RECENT_URLS_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
             now = datetime.now()
             valid_urls = set()
-            for u, date_str in data.items():
+            valid_titles = []
+            for u, val in data.items():
                 try:
+                    if isinstance(val, dict):
+                        date_str = val.get("date", "")
+                        title = val.get("title", "")
+                    else:
+                        date_str = val
+                        title = ""
                     dt = datetime.strptime(date_str, "%Y-%m-%d")
                     if (now - dt).days <= 5:
                         valid_urls.add(u)
+                        if title:
+                            valid_titles.append(title)
                 except Exception:
                     pass
-            return valid_urls
+            return valid_urls, valid_titles
     except Exception:
-        return set()
+        return set(), []
 
-def save_recent_urls(new_urls):
-    # 오늘 최종 배포된 기사 URL 저장 및 5일 지나면 자동 정제
+def save_recent_urls(new_items):
+    # 오늘 최종 배포된 기사 URL+제목 저장 및 5일 지나면 자동 정제
     urls_dict = {}
     if os.path.exists(RECENT_URLS_FILE):
         try:
@@ -1142,22 +1151,22 @@ def save_recent_urls(new_urls):
                 urls_dict = json.load(f)
         except Exception:
             urls_dict = {}
-            
     today_str = datetime.now().strftime("%Y-%m-%d")
-    for u in new_urls:
+    for item in new_items:
+        u = item.get("link") if isinstance(item, dict) else item
+        title = item.get("title", "") if isinstance(item, dict) else ""
         if u:
-            urls_dict[u] = today_str
-
+            urls_dict[u] = {"date": today_str, "title": title}
     now = datetime.now()
     cleaned_dict = {}
-    for u, date_str in urls_dict.items():
+    for u, val in urls_dict.items():
         try:
+            date_str = val.get("date", "") if isinstance(val, dict) else val
             dt = datetime.strptime(date_str, "%Y-%m-%d")
             if (now - dt).days <= 5:
-                cleaned_dict[u] = date_str
+                cleaned_dict[u] = val if isinstance(val, dict) else {"date": val, "title": ""}
         except Exception:
             pass
-
     try:
         with open(RECENT_URLS_FILE, "w", encoding="utf-8") as f:
             json.dump(cleaned_dict, f, ensure_ascii=False, indent=2)
@@ -1167,7 +1176,7 @@ def save_recent_urls(new_urls):
 
 def fetch_category_news(cat_id, info, limit=8):
     # 구글 뉴스 RSS를 사용하여 각 테마별 실시간 뉴스 수집
-    recent_published_urls = load_recent_urls()
+    recent_published_urls, recent_published_titles = load_recent_urls()
     query = info["query"]
     time_param = "when:7d" if cat_id in ["ai_semiconductor", "tax_benefit"] else "when:2d"
     full_query = f"{query} {time_param}" if not cat_id.startswith("site:") else query
@@ -1227,6 +1236,11 @@ def fetch_category_news(cat_id, info, limit=8):
             # [최상단 강제 필터링] 최근 5일 이내 이미 노출되었던 기사 URL 중복 재노출 차단
             if link in recent_published_urls or source_url in recent_published_urls:
                 print(f"      [필터링] 최근 5일 이내 이미 배포된 중복 기사 제외: {clean_title}")
+                continue
+
+            # [최상단 강제 필터링] URL이 달라도 제목이 유사하면 이미 배포된 것으로 간주 (구글뉴스 리다이렉트 토큰 변동 대응)
+            if any(are_titles_similar(clean_title, rt, threshold=0.5) for rt in recent_published_titles if rt):
+                print(f"      [필터링] 최근 5일 이내 유사 제목 기사 제외(URL 상이): {clean_title}")
                 continue
 
             # [최상단 강제 필터링] 포토 전용 섹션 URL 패턴(news1.kr/photos/ 등 사진 캡션 기사) 즉시 차단
@@ -3127,7 +3141,7 @@ def main():
     for cat_id, items in data.items():
         for item in items:
             if item.get("link"):
-                published_urls.append(item.get("link"))
+                published_urls.append({"link": item.get("link"), "title": item.get("title", "")})
     if not DRY_RUN:
         save_recent_urls(published_urls)
     else:
