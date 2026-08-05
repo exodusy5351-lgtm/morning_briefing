@@ -1052,8 +1052,9 @@ def validate_theme_domain(cat_id, text):
             return False
 
     # 부고 / 인사 / 동정 기사 원천 차단
-    if any(ex in t_lower for ex in ["부친상", "모친상", "장인상", "장모상", "부고", "동정", "발령", "청첩", "결혼"]):
+    if any(ex in t_lower for ex in ["부친상", "모친상", "장인상", "장모상", "빙부상", "빙모상", "부고", "부의", "별세", "부음", "삼가 고인", "인사동정", "발령"]):
         return False
+
     if cat_id in ["hospital_cost", "medtech"]: # 질병·치료비 리얼리티
         required = ["보험", "질병", "치료", "진료", "병원", "약", "급여", "환자", "수술", "의료", "암", "비급여", "본인부담", "치료비"]
     elif cat_id in ["silson", "fss_reform", "reform_insurance"]: # 제도·정책 이슈
@@ -1849,7 +1850,7 @@ def compile_briefing_data():
             # 글로벌 유사도 중복 검사 (전체 카테고리를 통틀어 유사 기사 중복 배제)
             is_duplicate = False
             for existing_item in flat_items:
-                if are_titles_similar(item["title"], existing_item["title"], threshold=0.42):
+                if are_titles_similar(item["title"], existing_item["title"], threshold=0.30):
                     is_duplicate = True
                     break
                     
