@@ -1536,7 +1536,8 @@ def parse_view_count(view_text):
     else:
         return int(val)
 
-def fetch_youtube_trends(limit=10):
+def fetch_youtube_trends(limit=10, recent_published_urls=None):
+    recent_published_urls = recent_published_urls or set()
     queries = [
         "비통치 비특치 암통원치료비",
         "비급여통원치료비 암",
@@ -1575,6 +1576,8 @@ def fetch_youtube_trends(limit=10):
                             continue
                         video_id = v.get("videoId")
                         if not video_id or video_id in seen_ids:
+                            continue
+                        if f"https://www.youtube.com/watch?v={video_id}" in recent_published_urls:
                             continue
                         title = "".join([r.get("text", "") for r in v.get("title", {}).get("runs", [])])
                         channel_name = "".join([r.get("text", "") for r in v.get("ownerText", {}).get("runs", [])])
@@ -1839,6 +1842,7 @@ def compile_briefing_data():
     flat_items = []
     seen_links = set()
     seen_titles = set()
+    recent_published_urls, _ = load_recent_urls()
     
     # 1. 뉴스 카테고리별 기사 수집 (한도 10개까지 넉넉히 수집)
     import concurrent.futures
@@ -1877,7 +1881,7 @@ def compile_briefing_data():
             flat_items.append(item)
             
     # 2. 유튜브 수집 및 독립 보관 (비통치/비특치 영상 최우선 1번 슬롯 강제 포함)
-    youtube_items = fetch_youtube_trends(limit=20)
+    youtube_items = fetch_youtube_trends(limit=20, recent_published_urls=recent_published_urls)
     top_youtube = []
     
     # 1순위: 비통치, 비특치, 비급여 치료비 관련 영상 먼저 찾아서 1번 슬롯 고정
