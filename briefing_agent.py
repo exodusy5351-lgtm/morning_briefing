@@ -171,7 +171,7 @@ CATEGORIES = {
     },
     "hospital_cost": {
         "label": "질병·치료비 리얼리티",
-        "query": '("본인부담" OR "비급여" OR "병원비" OR "약제비" OR "수술비" OR "입원 난민" OR "치료비 폭탄") ("부담" OR "사각지대" OR "실태" OR "급증" OR "쓸 약" OR "치료 옵션") -MOU -협약 -개원 -주가 -실적 -봉사',
+        "query": '("본인부담" OR "비급여" OR "병원비" OR "약제비" OR "수술비" OR "입원 난민" OR "치료비 폭탄" OR "간병비" OR "간병파산" OR "간병인") ("부담" OR "사각지대" OR "실태" OR "급증" OR "쓸 약" OR "치료 옵션") -MOU -협약 -개원 -주가 -실적 -봉사',
         "badge_color": "#10B981",  # Emerald/Green
         "badge_bg": "rgba(16, 185, 129, 0.1)"
     },
@@ -1057,7 +1057,7 @@ def validate_theme_domain(cat_id, text):
         return False
 
     if cat_id in ["hospital_cost", "medtech"]: # 질병·치료비 리얼리티
-        required = ["보험", "질병", "치료", "진료", "병원", "약", "급여", "환자", "수술", "의료", "암", "비급여", "본인부담", "치료비"]
+        required = ["보험", "질병", "치료", "진료", "병원", "약", "급여", "환자", "수술", "의료", "암", "비급여", "본인부담", "치료비", "간병"]
     elif cat_id in ["silson", "fss_reform", "reform_insurance"]: # 제도·정책 이슈
         required = ["보험", "금융", "금감원", "건보", "실손", "의료", "제도", "정책", "급여", "가이드라인", "개정"]
     elif cat_id == "product_trend": # 상품·시장 동향 (대출 저당물 '담보' 제외하고 '보험담보' '특약' 등 민간보험 관련만 통과)
