@@ -15,6 +15,14 @@ import base64
 import concurrent.futures
 import threading
 
+# Windows 콘솔(cp949) 환경에서 제목/본문에 포함된 특수 유니코드 문자(예: ⋯, —)를
+# print()로 출력하다 UnicodeEncodeError가 발생해 해당 테마 수집 전체가 통째로 유실되는 것을 방지
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+except Exception:
+    pass
+
 _LLM_POOL = concurrent.futures.ThreadPoolExecutor(max_workers=4)
 _QUOTA_LOCK = threading.Lock()
 # =========================================================================
@@ -140,26 +148,14 @@ GOOGLE_SPREADSHEET_ID = ""
 
 
 # =========================================================================
-# 뉴스 카테고리 구성 (9대 실전 테마 + 2대 신규 테마 = 총 11대 실전 테마)
+# 뉴스 카테고리 구성 (8대 실전 테마 + 2대 신규 테마 = 총 10대 실전 테마)
 # =========================================================================
 RSS_BASE_URL = "https://news.google.com/rss/search"
-
-def get_seasonal_query():
-    """현재 월(1~12월)에 맞춘 계절별 12개월 프리셋 자동 선택 쿼리"""
-    m = datetime.now().month
-    if m in [3, 4, 5]: # 봄
-        return '미세먼지 OR 황사 OR 알레르기 OR 황사마스크'
-    elif m in [6, 7, 8]: # 여름
-        return '폭염 OR 온열질환 OR 물놀이 OR 장마 OR 태풍 OR 식중독'
-    elif m in [9, 10, 11]: # 가을
-        return '환절기 OR 독감 OR 등산사고 OR 뇌심혈관'
-    else: # 겨울 (12, 1, 2월)
-        return '빙판길 OR 낙상 OR 독감 OR 한파 OR 저체온증'
 
 CATEGORIES = {
     "silson": {
         "label": "제도·정책 이슈",
-        "query": '("실손" OR "실손보험" OR "건강보험" OR "금감원" OR "도수치료") ("개정" OR "변경" OR "사각지대" OR "급여화" OR "자기부담") -MOU -협약 -인사 -동정 -주가 -코스피 -실적 -개원 -봉사',
+        "query": '("실손" OR "실손보험" OR "건강보험" OR "금감원" OR "도수치료") ("개정" OR "변경" OR "사각지대" OR "급여화" OR "자기부담") -MOU -협약 -인사 -동정 -주가 -코스피 -실적 -개원 -봉사 -지사 -지부 -지역본부 -출장소 -캠페인',
         "badge_color": "#3B82F6",  # Blue
         "badge_bg": "rgba(59, 130, 246, 0.1)"
     },
@@ -171,9 +167,15 @@ CATEGORIES = {
     },
     "hospital_cost": {
         "label": "질병·치료비 리얼리티",
-        "query": '("본인부담" OR "비급여" OR "병원비" OR "약제비" OR "수술비" OR "입원 난민" OR "치료비 폭탄" OR "간병비" OR "간병파산" OR "간병인") ("부담" OR "사각지대" OR "실태" OR "급증" OR "쓸 약" OR "치료 옵션") -MOU -협약 -개원 -주가 -실적 -봉사',
+        "query": '("본인부담" OR "비급여" OR "병원비" OR "약제비" OR "수술비" OR "입원 난민" OR "치료비 폭탄") ("부담" OR "사각지대" OR "실태" OR "급증" OR "쓸 약" OR "치료 옵션") -MOU -협약 -개원 -주가 -실적 -봉사 -지사 -지부 -지역본부 -출장소 -캠페인',
         "badge_color": "#10B981",  # Emerald/Green
         "badge_bg": "rgba(16, 185, 129, 0.1)"
+    },
+    "caregiving": {
+        "label": "간병·돌봄 대란",
+        "query": '("간병비" OR "간병인" OR "간병파산" OR "간병지옥" OR "요양병원 간병") ("월 300" OR "월 400" OR "급증" OR "부담" OR "일당" OR "사각지대" OR "파산") -MOU -협약 -지자체 -봉사 -지사 -지부',
+        "badge_color": "#F59E0B",  # Amber
+        "badge_bg": "rgba(245, 158, 11, 0.1)"
     },
     "medtech": {
         "label": "질병·치료비 리얼리티",
@@ -183,21 +185,9 @@ CATEGORIES = {
     },
     "reform_insurance": {
         "label": "제도·정책 이슈",
-        "query": '("건강보험" OR "건보 재정" OR "필수의료" OR "의료개혁" OR "건보료") ("개정" OR "급여" OR "사각지대" OR "부담") -지자체 -MOU -동정 -인사 -주가 -실적',
+        "query": '("건강보험" OR "건보 재정" OR "필수의료" OR "의료개혁" OR "건보료") ("개정" OR "급여" OR "사각지대" OR "부담") -지자체 -MOU -동정 -인사 -주가 -실적 -지사 -지부 -지역본부 -출장소 -캠페인',
         "badge_color": "#3B82F6",  # Blue
         "badge_bg": "rgba(59, 130, 246, 0.1)"
-    },
-    "seasonal_issue": {
-        "label": "시즌·이슈",
-        "query": '("폭염" OR "온열질환" OR "물놀이" OR "장마" OR "태풍" OR "식중독" OR "열사병" OR "낙상" OR "독감") ("주의" OR "급증" OR "환자" OR "부상" OR "사망" OR "발생")',
-        "badge_color": "#0EA5E9",  # Sky Blue
-        "badge_bg": "rgba(14, 165, 233, 0.1)"
-    },
-    "tax_benefit": {
-        "label": "절세·세제",
-        "query": '("상속세" OR "증여세" OR "종신보험" OR "연말정산" OR "세액공제" OR "절세") ("개정" OR "혜택" OR "한도" OR "활용법" OR "전략") -주가 -실적 -MOU',
-        "badge_color": "#CA8A04",  # Gold / Amber
-        "badge_bg": "rgba(202, 138, 4, 0.1)"
     },
     "product_trend": {
         "label": "상품·시장 동향",
@@ -210,12 +200,6 @@ CATEGORIES = {
         "query": '("보험왕" OR "MDRT" OR "삼성화재 RC" OR "보장분석" OR "설계사") ("성공" OR "노하우" OR "미담" OR "사례") -주가 -주식 -실적 -분기',
         "badge_color": "#C026D3",  # Fuchsia
         "badge_bg": "rgba(192, 38, 211, 0.1)"
-    },
-    "ai_semiconductor": {
-        "label": "보험 블로그 & 담보 비교",
-        "query": 'site:blog.naver.com OR site:tistory.com ("보험 비교" OR "담보 비교" OR "수술비 비교" OR "간병보험 비교")',
-        "badge_color": "#0284C7",  # Sky
-        "badge_bg": "rgba(2, 132, 199, 0.1)"
     },
     "assembly_petition": {
         "label": "국회청원 (비급여/급여화)",
@@ -274,7 +258,7 @@ def are_titles_similar(title1, title2, threshold=0.35):
 
 def generate_daily_insight(data):
     """
-    오늘 수집된 11대 실전 테마의 최신 기사 제목과 팩트를 종합하여
+    오늘 수집된 10대 실전 테마의 최신 기사 제목과 팩트를 종합하여
     Gemini 3.5 Flash가 매일 아침 가장 임팩트 있는 시장 이슈를 반영한 100% 동적 Market Insight 한마디를 생성
     """
     # 1순위: Gmail 아침열기 메일 연동 검사
@@ -367,7 +351,7 @@ def generate_daily_insight(data):
     # 3순위: Gemini 미구동 시 10가지 다채로운 폴백 문구 중 날짜(day) 기준 로테이션 선택 (중복 방지)
     fallback_pool = [
         "★ [오늘의 한마디] 폭염·계절 질환 급증과 비급여 치료비 증가 속에서, 고객 가정의 재정 안정망을 사전에 메워주는 틈새 보장점검이 최고의 세일즈 무기입니다.",
-        "★ [오늘의 한마디] 상속·증여세 개정 및 세액공제 이슈에 대비하여, 종신보험과 비과세 특약을 활용한 합법적 자산 승계 및 절세 컨설팅을 적극 안내하십시오.",
+        "★ [오늘의 한마디] 타사 신상품 출시와 절판 이슈가 이어지는 요즘, 우리 상품의 보장 우위와 심사 강점을 명확히 짚어주는 비교 화법이 계약 성사의 핵심입니다.",
         "★ [오늘의 한마디] 간병 비용의 가파른 상승세와 국가 돌봄 대란 흐름 속에서, 고객 가정의 재정적 붕괴를 사전에 차단하는 간병 자산 설계는 설계사 본연의 숭고한 가치입니다.",
         "★ [오늘의 한마디] 파워 블로거 및 현업 우수 설계사들의 담보 비교 자료를 바탕으로, 타사 대비 삼성화재 상품군이 가지는 보장 한도와 심사 우위를 부각하여 제안하십시오.",
         "★ [오늘의 한마디] 고액 신약 급여 지정 논의 활성화 뒤에는 수많은 환자들의 높은 비급여 비용 장벽이 존재합니다. 고객이 돈 걱정 없이 최고의 신치료를 선택하도록 돕는 고액 특약 준비를 권유하십시오.",
@@ -396,6 +380,8 @@ def generate_news_summary(title, cat_id, summary_text=""):
     else:
         # 제목 기반의 정갈한 팩트 설명
         fact_summary = f"본 기사는 '{clean_title}' 관련 최신 시장 및 정책 동향의 핵심 팩트를 담고 있습니다."
+
+    return fact_summary
 
 def evaluate_article_cot(title, body="", hook=True):
     """
@@ -451,9 +437,52 @@ def evaluate_article_cot(title, body="", hook=True):
     # 해외 황당 사건사고 / 해외 기이한 의료비 가십 뉴스 (국내 민간 보험 세일즈 무관) 차단
     if any(k in text for k in ["뱀에 물려", "미국 병원비", "해외 황당", "총기", "마약", "해외 사연", "미국 의료비"]) and not any(ik in text for ik in ["해외여행자보험", "실손", "건강보험"]):
         exclusion = True
+    # 지역 공단 지사/지부 등 지엽적 기관 뉴스 원천 차단 (단, 중요 제도 변경 이슈 동반 시 예외 허용)
+    local_branch_keywords = [
+        "지사", "지부", "지역본부", "출장소", "사업소", "분회", "지회", "보건지소", "보건진료소",
+        "국민건강보험공단 경주", "건보공단 경주", "건보 경주", "건보공단 지사", "공단 지사",
+        "주민자치", "사회복지관"
+    ]
+    if any(k in text for k in local_branch_keywords) and not any(
+        ik in text for ik in ["실손 개정", "4세대 실손", "급여화 확정", "본인부담상한제 개정"]
+    ):
+        exclusion = True
+    # 국가/거시경제 단위 보험(국가재보험, 수출보험, 지정학적 리스크 대응용 국가지원보험 등) - 개인 보험영업과 무관
+    macro_insurance_keywords = [
+        "국가 지원 보험", "국가재보험", "국가 재보험", "수출보험", "무역보험", "전쟁보험", "테러보험",
+        "지정학적 위험", "지정학적 리스크", "정치적 리스크"
+    ]
+    if any(k in text for k in macro_insurance_keywords):
+        exclusion = True
+    # "국가"+"보험"이 함께 등장하지만 개인 보험상품 관련 단어가 전혀 없는 거시/제도 차원 기사 배제
+    # (주의: "보장"처럼 지나치게 일반적인 단어는 예외 목록에서 제외 — 크롤링 실패 폴백 문구 등과
+    #  우연히 겹쳐 실제로는 무관한 기사가 예외 처리되어 통과되는 사고가 있었음)
+    if "국가" in text and "보험" in text and not any(
+        pk in text for pk in ["가입", "보험료", "보험금", "특약", "약관", "실손", "청구", "피보험자"]
+    ):
+        exclusion = True
+    # 보험사 자체의 경영/재무/규제 이슈(예보료, 지급여력비율, 실적, 지배구조 등) - 개인 고객에게 팔 보장과 무관
+    industry_finance_keywords = [
+        "예보료", "예금보험료", "지급여력비율", "k-ics", "킥스", "재무건전성", "자본확충",
+        "신용등급", "지배구조", "이사회", "주주총회", "배당", "자사주", "실적발표", "분기 실적",
+        "영업이익", "당기순이익", "특별기여금"
+    ]
+    if any(k in text for k in industry_finance_keywords) and not any(
+        pk in text for pk in ["가입", "보험료 인상", "특약", "약관", "실손", "담보", "보험금"]
+    ):
+        exclusion = True
 
-    # STEP 4. 최종 채택 판단 (체크리스트 2개 이상 또는 주요 질병/시즌/절세 이슈 + 제외조건 없음)
-    adopted = (len(hits) >= 2 or any(k in text for k in ["대장암", "폐암", "유방암", "재발", "치료비", "신약", "완치율", "폭염", "온열질환", "장마", "상속세", "증여세", "종신보험", "세액공제"])) and (not exclusion)
+    # STEP 4. 최종 채택 판단 (체크리스트 2개 이상 또는 주요 질병/시즌 이슈 + 보험/치료비 맥락 키워드 필수 + 제외조건 없음)
+    context_keywords = [
+        "보험", "실손", "보장", "특약", "담보", "치료비", "수술비", "병원비", "비급여",
+        "본인부담", "암", "신약", "간병", "리모델링"
+    ]
+    has_context = any(k in text for k in context_keywords)
+    adopted = (
+        (len(hits) >= 2 or any(k in text for k in ["대장암", "폐암", "유방암", "재발", "치료비", "신약", "완치율", "폭염", "온열질환", "장마"]))
+        and has_context
+        and (not exclusion)
+    )
 
     # STEP 5. 타사 상품 홍보 및 상품 소개 기사 판별 (is_promo)
     other_insurers = ["한화생명", "교보생명", "동양생명", "DB손보", "DB손해보험", "현대해상", "KB손보", "KB손해보험", "메리츠", "메리츠화재", "흥국화재", "롯데손보", "신한라이프", "라이나생명", "AIA생명", "하나손보"]
@@ -484,12 +513,12 @@ def evaluate_article_cot(title, body="", hook=True):
     if adopted:
         if is_promo or any(k in text for k in ["상품 출시", "신상품", "절판", "한도축소", "한도 축소", "특약", "담보", "보험 상품", "상품 승부", "통합치료비 상품", "손해율", "자동차보험", "차보험", "보험료 인상", "보험료", "3단 보장", "3단보장"]):
             category = "상품·시장 동향"
-        elif any(k in text for k in ["상속세", "증여세", "종신보험", "연말정산", "세액공제", "절세", "세제"]):
-            category = "절세·세제"
         elif any(k in text for k in ["폭염", "온열질환", "물놀이", "장마", "태풍", "식중독", "빙판길", "낙상", "환절기", "독감"]):
             category = "시즌·이슈"
         elif any(k in text for k in ["실손 개정", "금감원", "건보", "급여화", "관리급여", "가이드라인", "제도 변경", "정책"]):
             category = "제도·정책 이슈"
+        elif any(k in text for k in ["간병비", "간병인", "간병파산", "간병지옥", "요양병원 간병", "간병"]):
+            category = "간병·돌봄 대란"
         elif any(k in text for k in ["암", "재발", "신약", "완치", "치료비", "수술비", "전이", "항암", "표적", "중입자", "투병", "병원비", "입원", "의료비", "본인부담", "억", "날벼락", "환자", "사연", "부담", "치료"]):
             category = "질병·치료비 리얼리티"
         elif any(k in text for k in ["성공", "동기부여", "mdrt", "보험왕", "미담", "설계사"]):
@@ -554,7 +583,6 @@ def generate_sales_hook_gemini(title: str, article_body: str, is_promo: bool = F
     gemini-3.5-flash 기반 CoT 현장 화법 생성 함수
     - 과잉진료/손해율/누수 기사인 경우 실손 악화 보장대비 톤으로 분기
     - is_promo=True 인 경우 경쟁 참고 톤
-    - category='절세·세제' 인 경우 자산관리 절세 컨설팅 톤으로 분기
     - Rate limit (429) 발생 시 1회 지연 재시도 (Retry) 구동
     """
     global GEMINI_STATS, GEMINI_QUOTA_USED
@@ -635,24 +663,6 @@ def generate_sales_hook_gemini(title: str, article_body: str, is_promo: bool = F
               "sales_hook": "💡 경쟁사 상품 참고 메모: (비교/견제용 1~2문장)"
             }}
             """
-        elif category == "절세·세제":
-            prompt = f"""
-            당신은 종합자산관리 및 세무 컨설팅을 제공하는 전문 FP입니다.
-            아래 절세/세제 관련 기사를 분석하여 고객과의 자산관리 및 종신보험 절세 상담용 화법을 작성하십시오.
-
-            [기사 제목] {title}
-            [기사 본문] {article_body[:1000] if article_body else '본문 없음'}
-
-            [작성 조건]
-            1. 기사 내 상속세, 증여세, 세액공제, 절세 혜택 관련 핵심 수치나 제도 변경 팩트를 1개 인용하십시오.
-            2. 고객에게 자산 승계 플랜이나 종신보험/절세 특약 점검을 제안하는 1~2문장의 전문 자산관리 컨설팅 톤으로 작성하십시오.
-
-            [출력 JSON 형식]
-            {{
-              "fact_extracted": "기사 내 추출 팩트",
-              "sales_hook": "💡 현장 화법 포인트: (팩트를 포함한 1~2문장)"
-            }}
-            """
         else:
             prompt = f"""
             당신은 보험 영업 현장을 지원하는 마케팅 컨설턴트입니다.
@@ -702,6 +712,7 @@ def generate_sales_hook_gemini(title: str, article_body: str, is_promo: bool = F
                 hook = data.get("sales_hook")
 
                 if fact and str(fact).lower() != "null" and hook:
+                    GEMINI_STATS["gemini_success"] += 1
                     print(f"      [Gemini 3.5 Flash (쿼터 사용 {GEMINI_QUOTA_USED}/{GEMINI_QUOTA_LIMIT})] 화법 생성 성공{' (과잉진료/손해율톤)' if is_overtreatment else ''}: '{title[:20]}...'")
                     return hook.replace('💡 현장 화법 포인트: ', '').replace('💡 현장 화법 포인트:', '').replace('💡 경쟁사 상품 참고 메모: ', '').replace('💡 경쟁사 상품 참고 메모:', '').strip()
                 break
@@ -764,16 +775,7 @@ def generate_smart_fact_hook(title: str, body: str, category: str, is_promo: boo
     if is_relief_context:
         return f"의료비 부담을 줄이기 위한 지원 및 혜택 정책{fact_str}이 추진되고 있습니다. 지자체/정부 지원 범위와 함께 보유 중인 보험의 보장 틈새를 사전에 안내해 보세요."
 
-    if category == "절세·세제":
-        templates = [
-            f"최근 {fact_str if unique_facts else '상속·증여세 개정'} 관련 세제 혜택과 공제 한도 변경 이슈가 주목받고 있습니다. 종신보험 및 절세 특약을 활용한 합법적 자산 승계 플랜을 점검해 보세요.",
-            f"세제 개정 동향{fact_str}에 따라 자산 보유 고객님의 절세 니즈가 커지고 있습니다. 종신보험의 비과세 혜택과 절세 설계를 사전에 안내해 드리는 것을 추천합니다.",
-            f"{fact_str if unique_facts else '증여세 및 세액공제'} 활용법을 바탕으로 사전 자산 이동 전략을 수립할 시점입니다. 고객님의 기존 세액공제 보장 한도를 점검해 보세요.",
-            f"상속세 및 증여세 이슈{fact_str}와 관련하여 합법적 자산 승계 수단으로 종신보험의 유용성을 사전에 공유하고 보장 플랜을 점검해 보시길 권유합니다."
-        ]
-        return templates[pattern_idx]
-
-    elif category == "시즌·이슈":
+    if category == "시즌·이슈":
         templates = [
             f"계절성 질환 및 안전사고 우려{fact_str}가 높아지고 있습니다. 갑작스러운 치료비나 입원비 부담에 대비해 보유 중인 보장 틈새를 사전에 안내해 보세요.",
             f"최근 계절적 위험 요인{fact_str}에 따른 응급실 이용 및 입원 환자가 증가하고 있습니다. 고객님의 응급실 내원비 및 수술비 보장을 사전 점검해 드리는 것이 유리합니다.",
@@ -1057,21 +1059,15 @@ def validate_theme_domain(cat_id, text):
         return False
 
     if cat_id in ["hospital_cost", "medtech"]: # 질병·치료비 리얼리티
-        required = ["보험", "질병", "치료", "진료", "병원", "약", "급여", "환자", "수술", "의료", "암", "비급여", "본인부담", "치료비", "간병"]
+        required = ["보험", "질병", "치료", "진료", "병원", "약", "급여", "환자", "수술", "의료", "암", "비급여", "본인부담", "치료비"]
+    elif cat_id == "caregiving": # 간병·돌봄 대란
+        required = ["간병비", "간병인", "간병파산", "간병지옥", "요양", "돌봄", "간병"]
     elif cat_id in ["silson", "fss_reform", "reform_insurance"]: # 제도·정책 이슈
         required = ["보험", "금융", "금감원", "건보", "실손", "의료", "제도", "정책", "급여", "가이드라인", "개정"]
     elif cat_id == "product_trend": # 상품·시장 동향 (대출 저당물 '담보' 제외하고 '보험담보' '특약' 등 민간보험 관련만 통과)
         if any(lk in t_lower for lk in ["대출", "주담대", "금리", "이자", "저당"]):
             return False
         required = ["보험", "상품", "특약", "수술비", "손해율", "보장", "절판", "신상품", "한도"]
-    elif cat_id == "seasonal_issue": # 시즌·이슈
-        required = ["주의", "환자", "부상", "치료", "병원", "폭염", "질환", "안전", "건강", "장마", "태풍", "온열", "감기", "낙상"]
-    elif cat_id == "tax_benefit": # 절세·세제
-        required = ["상속세", "증여세", "종신보험", "연말정산", "세액공제", "절세", "세제", "보험", "플랜"]
-    elif cat_id == "ai_semiconductor": # 보험 블로그 & 담보 비교
-        if any(lk in t_lower for lk in ["주택연금", "역모기지", "주담대", "예금", "적금", "펀드"]):
-            return False
-        required = ["보험", "담보", "특약", "보장", "가입", "실손", "암보험", "종신", "정기보험"]
     else:
         return True
         
@@ -1179,7 +1175,7 @@ def fetch_category_news(cat_id, info, limit=8):
     # 구글 뉴스 RSS를 사용하여 각 테마별 실시간 뉴스 수집
     recent_published_urls, recent_published_titles = load_recent_urls()
     query = info["query"]
-    time_param = "when:7d" if cat_id in ["ai_semiconductor", "tax_benefit"] else "when:2d"
+    time_param = "when:2d"
     full_query = f"{query} {time_param}" if not cat_id.startswith("site:") else query
     encoded_query = urllib.parse.quote(full_query)
     url = f"{RSS_BASE_URL}?q={encoded_query}&hl=ko&gl=KR&ceid=KR:ko"
@@ -1266,12 +1262,11 @@ def fetch_category_news(cat_id, info, limit=8):
                 except Exception:
                     pub_date_str = pub_date_raw
             
-            # 최근 48시간(2일) 이내 수집 (ai_semiconductor 및 tax_benefit 테마는 7일)
+            # 최근 48시간(2일) 이내 수집
             if pub_dt:
                 now_utc = datetime.now(timezone.utc)
                 diff = now_utc - pub_dt
-                time_limit = 7 * 24 * 3600 if cat_id in ["ai_semiconductor", "tax_benefit"] else 48 * 3600
-                if diff.total_seconds() > time_limit:
+                if diff.total_seconds() > 48 * 3600:
                     continue
             
             # 의료개혁/건보(reform_insurance): 지방 지자체/지방 의료원 뉴스 차단하고 서울/수도권/중앙정책 뉴스만 허용
@@ -1283,6 +1278,23 @@ def fetch_category_news(cat_id, info, limit=8):
 
             title_lower = clean_title.lower()
             source_lower = source.lower()
+
+            # [최상단 강제 필터링] 과거 연도(2023년 이전) 명시, 폐업/인수된 옛 보험사, 동남아 등 지역 뉴스 즉시 차단
+            if is_outdated_content(clean_title):
+                continue
+
+            # [최상단 강제 필터링] 개인 블로그(네이버블로그/티스토리/벨로그) 게시물은 신뢰도·팩트 검증이 어려워 카테고리 불문 전면 차단
+            blog_domains = ["blog.naver.com", "tistory.com", "velog.io"]
+            if any(bd in link.lower() for bd in blog_domains) or any(bd in source_url.lower() for bd in blog_domains):
+                print(f"      [최상단필터링] 개인 블로그 게시물 전면 차단: {clean_title}")
+                continue
+
+            # [최상단 강제 필터링] 지방 소도시명 + 공단 지사/지부 등 지엽적 기관 뉴스는 크롤링 전 단계에서 즉시 차단
+            local_cities = ["경주", "포항", "구미", "창원", "전주", "천안", "춘천", "안동", "군산", "목포", "충주", "원주", "제천", "김천", "영주", "상주", "속초", "강릉"]
+            branch_suffixes = ["지사", "지부", "본부", "출장소"]
+            if any(city in title_lower and any(bs in title_lower for bs in branch_suffixes) for city in local_cities):
+                print(f"      [최상단필터링] 지역 공단 지사/지부 지엽적 뉴스 즉시 차단: {clean_title}")
+                continue
 
             # 지엽적인 지역 단체 수상/행사 뉴스 사전 차단 (위더스상, 개소식, 발대식, 표창 등)
             local_event_keywords = ["위더스", "감사패", "표창", "발대식", "개소", "mou", "출범식", "기념식"]
@@ -1322,7 +1334,7 @@ def fetch_category_news(cat_id, info, limit=8):
                 continue
                 
             # 기사 본문 크롤링 - Google RSS 리다이렉트 해원 후 og:description / 네이버 모바일 블로그 파서 구동
-            if cat_id not in ["ai_semiconductor", "assembly_petition", "youtube"]:
+            if cat_id not in ["assembly_petition", "youtube"]:
                 _pre = evaluate_article_cot(clean_title, "", hook=False)
                 if not _pre["adopted"] and len(_pre["checklist_hits"]) == 0:
                     print(f"      [사전탈락] 제목 단계 영업관련성 0 → 크롤링 생략: {clean_title[:30]}")
@@ -1364,14 +1376,16 @@ def fetch_category_news(cat_id, info, limit=8):
                 continue
                 
             if not article_body or len(article_body) < 15 or article_body == clean_title:
-                # 본문 부실 시 제목 및 핵심 키워드를 조합하여 Gemini API에 전달할 풍부한 텍스트로 보완
-                article_body = f"{clean_title} 관련 최신 정보 및 보장 관련 팩트 이슈 기사입니다."
+                # 본문 부실 시 제목만으로 CoT를 평가하도록 빈 문자열 유지
+                # (주의: 여기에 "보장"/"보험" 등 실제 CoT 판별 키워드와 겹치는 단어를 채워 넣으면
+                #  본문 크롤링 실패 기사가 가짜로 맥락 검증을 통과하는 허점이 생긴다 — 실제 겪은 버그)
+                article_body = ""
             
             # 6단계 Chain of Thought (CoT) 영업 관련성 및 인사이트 평가
             cot_eval = evaluate_article_cot(clean_title, article_body)
             
             # 일반 뉴스 카테고리의 경우 CoT 영업 관련성 검증 미달(adopted==False) 시 즉시 제외
-            if cat_id not in ["ai_semiconductor", "assembly_petition", "youtube"] and not cot_eval["adopted"]:
+            if cat_id not in ["assembly_petition", "youtube"] and not cot_eval["adopted"]:
                 print(f"      [CoT 탈락] 영업 관련성 미달 기사 제외: {clean_title}")
                 continue
 
@@ -1391,6 +1405,10 @@ def fetch_category_news(cat_id, info, limit=8):
                 badge_color = "#10B981"
                 badge_bg = "rgba(16, 185, 129, 0.1)"
                 target_cat_id = "hospital_cost"
+            elif cat_label == "간병·돌봄 대란":
+                badge_color = "#F59E0B"
+                badge_bg = "rgba(245, 158, 11, 0.1)"
+                target_cat_id = "caregiving"
             elif cat_label == "상품·시장 동향":
                 badge_color = "#06B6D4"
                 badge_bg = "rgba(6, 182, 212, 0.1)"
@@ -1476,15 +1494,41 @@ def calculate_sales_relevance_score(item):
         score += 2
         score_details.append("구체적수치(+2)")
 
+    # 4-1. 고액/급증 수치 크기 가점 세분화 (설득력이 큰 고액 단위·급증 표현일수록 추가 가산, 최대 +3점)
+    big_number_patterns = [r'억', r'천만', r'백만', r'\d{2,}%', r'\d+배', r'급증', r'폭등', r'최대']
+    big_hits = sum(1 for p in big_number_patterns if re.search(p, text))
+    if big_hits > 0:
+        bonus = min(big_hits, 3)
+        score += bonus
+        score_details.append(f"고액/급증수치({big_hits}건 감지)(+{bonus})")
+
     # 5. 영업 임팩트 키워드 가점 (+2점)
     impact_keywords = [
-        "급증", "부담 증가", "제도 변경", "급여 기준", "환자 수", "폭염", "온열질환", 
+        "급증", "부담 증가", "제도 변경", "급여 기준", "환자 수", "폭염", "온열질환",
         "사망", "상속세", "증여세", "절세", "수술비", "비급여", "한도 축소", "절판"
     ]
     found_impact = [ik for ik in impact_keywords if ik in text]
     if found_impact:
         score += 2
         score_details.append(f"임팩트키워드({found_impact[0]})(+2)")
+
+    # 6. 긴박성/골든타임 가점 (+3점) - "지금이 마지막 기회" 서사를 만드는 제도 변화·마감 시한 신호
+    urgency_keywords = [
+        "시행일 확정", "유예기간 종료", "단계적 폐지", "입법예고", "내년 시행", "개정 예고",
+        "경과조치", "절판 임박", "한도 축소", "인수 강화", "손해율 악화", "판매 중단", "마지막 기회"
+    ]
+    found_urgency = [uk for uk in urgency_keywords if uk in text]
+    if found_urgency:
+        score += 3
+        score_details.append(f"긴박성/골든타임({found_urgency[0]})(+3)")
+
+    # 7. 영업 무관/노이즈 감점 강화 (-5점) - 지역 공단 지사, 단순 협약/MOU, 지자체 무료 돌봄 기사
+    text_lower = text.lower()
+    noise_keywords = ["지사", "지부", "지역본부", "출장소", "mou", "협약", "지자체", "무료 돌봄", "돌봄 바우처", "무료 진료"]
+    found_noise = [nk for nk in noise_keywords if nk in text_lower]
+    if found_noise:
+        score -= 5
+        score_details.append(f"영업무관/노이즈({found_noise[0]})(-5)")
 
     item["sales_score"] = score
     item["score_details"] = ", ".join(score_details) if score_details else "기본(0)"
@@ -1924,10 +1968,19 @@ def compile_briefing_data():
         raw_cat_groups[item["category_id"]].append(item)
 
     all_data = {cat_id: [] for cat_id in CATEGORIES.keys()}
-    all_data["youtube"] = top_youtube  # 유튜브 전용 독립 보장 노출
+    all_data["youtube"] = top_youtube  # 유튜브 전용 독립 보장 노출 (실전 영상 최대 3건)
     all_data["threads_trend"] = fetch_threads_hot_issues()  # 스레드 핫이슈 수집 데이터 바인딩
-    all_data["assembly_petition"] = fetch_assembly_petitions()  # 국회청원 비급여/급여화 수집 데이터 바인딩
-    
+    all_data["assembly_petition"] = fetch_assembly_petitions()[:2]  # 국회청원(근거 자료 슬롯) 최대 2건 제한
+
+    # 테마별 노출 쿼터: 핵심 메인(간병/치료비/제도-긴박성)은 3~4건, 서브 근거는 1~2건으로 차등 배분
+    SLOT_QUOTAS = {
+        "caregiving": 4,       # 핵심: 간병·돌봄 대란
+        "hospital_cost": 4,    # 핵심: 수술·치료비 리얼리티
+        "silson": 4,           # 핵심: 제도·긴박성
+        "fss_reform": 4,       # 핵심: 제도·긴박성
+        "motivation": 2,       # 서브 근거: 동기부여
+    }
+
     for cat_id, cat_items in raw_cat_groups.items():
         if cat_id in ["youtube", "threads_trend", "assembly_petition"]:
             continue
@@ -1935,17 +1988,18 @@ def compile_briefing_data():
         # 영업 유용성 스코어(sales_score) 내림차순 정렬 (동점 시 최신순)
         cat_items.sort(key=lambda x: (x.get("sales_score", 0), x.get("datetime") or datetime.min), reverse=True)
 
-        pure_facts = [it for it in cat_items if not it.get("is_promo")]
+        pure_facts = [it for it in cat_items if not it.get("is_promo") and it.get("sales_score", 0) > 0]
         promo_items = [it for it in cat_items if it.get("is_promo")]
 
-        selected = pure_facts[:3]
+        slot = SLOT_QUOTAS.get(cat_id, 3)
+        selected = pure_facts[:slot]
         if promo_items:
-            print(f"      [{cat_id}] 순수 팩트 기사 {len(pure_facts)}건 확보 -> 타사 홍보 기사 {len(promo_items)}건 전면 제외")
+            print(f"      [{cat_id}] 순수 팩트 기사 {len(pure_facts)}건 확보(쿼터 {slot}건) -> 타사 홍보 기사 {len(promo_items)}건 전면 제외")
         else:
-            print(f"      [{cat_id}] 순수 팩트 {len(pure_facts)}건 확보")
+            print(f"      [{cat_id}] 순수 팩트 {len(pure_facts)}건 확보(쿼터 {slot}건)")
 
         all_data[cat_id] = selected
-        
+
     return all_data
 
 def build_mail_text(data, today_str, notion_url=None):
@@ -1966,13 +2020,11 @@ def build_mail_text(data, today_str, notion_url=None):
         
     lines.append(insight)
     lines.append("============================================================")
-    lines.append("\n오늘 아침 수집된 9대 실전 테마별 팩트 요약 리포트입니다.\n")
-    
+    lines.append("\n오늘 아침 수집된 8대 실전 테마별 팩트 요약 리포트입니다.\n")
+
     for cat_id, info in CATEGORIES.items():
         items = data.get(cat_id, [])
-        if cat_id in ["seasonal_issue", "tax_benefit"] and items:
-            items = items[:1]  # 시즌·이슈 및 절세·세제 테마는 메일 요약 텍스트에서 최대 1건만 노출
-        
+
         # 상품동향 및 성공/미담 타이틀 커스텀 슬로건 매핑
         if cat_id == "product_trend":
             lines.append(f"■ {info['label']} (★신설: 타사 신상품/절판 정보 및 삼성화재 상품과의 실전 비교 우위 분석)")
@@ -2071,11 +2123,17 @@ def build_html_card_news(data, today_str, mail_text, notion_url=None):
             if cat_id == "assembly_petition":
                 clean_pet_title = item['title'].replace('[청원] ', '')
                 clean_source = item['source'].replace('국민동의청원', '국회청원')
+                petition_summary = (item.get('situation') or '').strip()
+                petition_summary_html = (
+                    f'<p class="petition-item-summary" style="margin-top: 0; margin-bottom: 1.5rem; font-size: 0.85rem; line-height: 1.6; color: var(--text-muted);">{petition_summary}</p>'
+                    if petition_summary else ''
+                )
                 card_html = (
                     f'<article class="card petition-item" data-category="assembly_petition">'
                     f'<div class="card-header petition-meta"><span class="badge disease-tag" style="{badge_style}">{item.get("disease_tag", "국회청원")}</span>'
                     f'<span class="source-tag petition-period" style="color: #EC4899; font-weight: 700;">{item["pub_date_str"]}</span></div>'
-                    f'<h3 class="card-title petition-item-title" style="margin-top: 12px; margin-bottom: 1.5rem; line-height: 1.5;"><a href="{item["link"]}" target="_blank" rel="noopener" style="color: var(--text-main); text-decoration: none;">[국회청원] {clean_pet_title}</a></h3>'
+                    f'<h3 class="card-title petition-item-title" style="margin-top: 12px; margin-bottom: 8px; line-height: 1.5;"><a href="{item["link"]}" target="_blank" rel="noopener" style="color: var(--text-main); text-decoration: none;">[국회청원] {clean_pet_title}</a></h3>'
+                    f'{petition_summary_html}'
                     f'<div class="card-footer petition-footer" style="margin-top: auto; padding-top: 12px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;"><span class="card-date" style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">{clean_source}</span>'
                     f'<a href="{item["link"]}" class="card-link btn-link" target="_blank" rel="noopener" style="color: #EC4899; font-weight: 700;">청원내용 확인하기 -></a></div></article>'
                 )
@@ -2600,11 +2658,9 @@ def build_html_card_news(data, today_str, mail_text, notion_url=None):
                 <button class="tab-btn active" onclick="filterCategory('all', this)">전체보기</button>
                 <button class="tab-btn" onclick="filterCategory('policy', this)">제도·정책 이슈</button>
                 <button class="tab-btn" onclick="filterCategory('reality', this)">질병·치료비 리얼리티</button>
+                <button class="tab-btn" onclick="filterCategory('caregiving', this)">간병·돌봄 대란</button>
                 <button class="tab-btn" onclick="filterCategory('market', this)">상품·시장 동향</button>
-                <button class="tab-btn" onclick="filterCategory('seasonal_issue', this)">시즌·이슈</button>
-                <button class="tab-btn" onclick="filterCategory('tax_benefit', this)">절세·세제</button>
                 <button class="tab-btn" onclick="filterCategory('motivation', this)">성공·동기부여</button>
-                <button class="tab-btn" onclick="filterCategory('ai_semiconductor', this)">보험 블로그/상품비교</button>
                 <button class="tab-btn" onclick="filterCategory('assembly_petition', this)">국회청원 (비급여/급여화)</button>
                 <button class="tab-btn" onclick="filterCategory('youtube', this)">유튜브 핫이슈</button>
             </div>
@@ -2676,8 +2732,6 @@ def build_html_card_news(data, today_str, mail_text, notion_url=None):
             if (element) element.classList.add('active');
 
             const cards = document.querySelectorAll('.grid .card');
-            let seasonalCount = 0;
-            let taxCount = 0;
 
             cards.forEach(card => {
                 const cardCat = card.getAttribute('data-category');
@@ -2685,18 +2739,12 @@ def build_html_card_news(data, today_str, mail_text, notion_url=None):
                 const cardLabel = badge ? badge.innerText.trim() : '';
 
                 if (category === 'all') {
-                    if (cardCat === 'seasonal_issue') {
-                        seasonalCount++;
-                        card.style.display = (seasonalCount <= 1) ? 'flex' : 'none';
-                    } else if (cardCat === 'tax_benefit') {
-                        taxCount++;
-                        card.style.display = (taxCount <= 1) ? 'flex' : 'none';
-                    } else {
-                        card.style.display = 'flex';
-                    }
+                    card.style.display = 'flex';
                 } else if (category === 'policy' && (cardLabel.includes('제도') || cardLabel.includes('정책') || cardCat === 'silson' || cardCat === 'fss_reform' || cardCat === 'reform_insurance')) {
                     card.style.display = 'flex';
                 } else if (category === 'reality' && (cardLabel.includes('질병') || cardLabel.includes('치료비') || cardCat === 'hospital_cost' || cardCat === 'medtech')) {
+                    card.style.display = 'flex';
+                } else if (category === 'caregiving' && (cardLabel.includes('간병') || cardLabel.includes('돌봄') || cardCat === 'caregiving')) {
                     card.style.display = 'flex';
                 } else if (category === 'market' && (cardLabel.includes('상품') || cardLabel.includes('시장') || cardCat === 'product_trend')) {
                     card.style.display = 'flex';
@@ -2801,7 +2849,6 @@ def build_notion_blocks(data):
         "제도·정책 이슈":          "📋",
         "질병·치료비 리얼리티":    "💊",
         "시즌·이슈":               "☀️",
-        "절세·세제":               "💴",
         "상품·시장 동향":          "📊",
         "성공·동기부여":           "⭐",
         "유튜브 핫이슈":           "▶️",
@@ -2813,7 +2860,6 @@ def build_notion_blocks(data):
         "제도·정책 이슈":          "blue_background",
         "질병·치료비 리얼리티":    "green_background",
         "시즌·이슈":               "gray_background",
-        "절세·세제":               "yellow_background",
         "상품·시장 동향":          "default",
         "성공·동기부여":           "purple_background",
         "유튜브 핫이슈":           "red_background",
@@ -3096,7 +3142,7 @@ def save_to_google_sheet(data, spreadsheet_id):
                     hashtags_str = ", ".join(item["analysis"].get("hashtags", []))
                     summary = item["analysis"].get("summary", "")
                 elif cat_id == "product_trend":
-                    comp_fact = get_samsung_comparison_fact(title).replace('★ [삼성화재 비교 우위] ', '')
+                    comp_fact = f"{title[:60]} 관련 삼성화재 상품 대비 보장 우위 점검 필요" if title else ""
                 elif cat_id == "motivation":
                     motivation_quote = "우리의 가치는 고객의 약속을 지키는 힘입니다. 자부심을 가지고 힘차게 나아갑시다!"
                         
