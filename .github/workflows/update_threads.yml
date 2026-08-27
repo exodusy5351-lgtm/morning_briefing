@@ -29,9 +29,16 @@ jobs:
         run: python briefing_agent.py --ci
 
       - name: Commit and Push
+        env:
+          TZ: Asia/Seoul
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add index.html data/threads_hot.json recent_published_urls.json
-          git diff --staged --quiet || git commit -m "chore: 아침 브리핑 자동 갱신 $(date +%Y-%m-%d)"
-          git push
+          if git diff --staged --quiet; then
+            echo "### 변경사항 없음 — 커밋 생략" >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning::오늘자 브리핑 콘텐츠에 변경사항이 없어 커밋을 건너뛰었습니다. 수집 단계가 실패했을 가능성을 확인하세요."
+          else
+            git commit -m "chore: 아침 브리핑 자동 갱신 $(date +%Y-%m-%d)"
+            git push || (git pull --rebase origin main && git push)
+          fi
