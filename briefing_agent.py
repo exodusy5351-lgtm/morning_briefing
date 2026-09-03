@@ -1704,6 +1704,15 @@ def fetch_assembly_petitions():
         # 1단계: 1차 분야 필터 - petitRealmCode == "HMCCS" (보건의료)
         hmccs_items = [item for item in items if item.get('petitRealmCode') == 'HMCCS' or item.get('petitRealmNm') == '보건의료']
 
+        # 1.5단계: 마감된 과거 청원 배제 - 동의 마감일이 오늘 이전인 항목 제외
+        _today_str = datetime.now().strftime('%Y-%m-%d')
+
+        def is_closed(item):
+            end_str = (item.get('agreEndDe') or '')[:10]
+            return bool(end_str) and end_str < _today_str
+
+        hmccs_items = [item for item in hmccs_items if not is_closed(item)]
+
         # 2단계: 5만 명 달성 보장 패스트트랙 분류
         fast_track_candidates = []
         general_candidates = []
@@ -1725,32 +1734,6 @@ def fetch_assembly_petitions():
                         general_candidates.append(item)
                 else:
                     general_candidates.append(item)
-
-        # 2단계 보완: PTTJUDGE API에서 회부된 5만 명 청원도 패스트트랙 후보에 보장 추가
-        try:
-            url_judge = f"https://open.assembly.go.kr/portal/openapi/PTTJUDGE?KEY={API_KEY}&Type=json&pIndex=41&pSize=100"
-            req_j = urllib.request.Request(url_judge, headers={'User-Agent': 'Mozilla/5.0'})
-            res_j = urllib.request.urlopen(req_j, timeout=5).read().decode('utf-8')
-            data_j = json.loads(res_j)
-            if 'PTTJUDGE' in data_j and len(data_j['PTTJUDGE']) > 1:
-                rows = data_j['PTTJUDGE'][1].get('row', [])
-                for r in rows:
-                    if r.get('PTT_KIND') == '국민동의':
-                        title = r.get('PTT_NM', '')
-                        if any(k in title for k in ['소세포폐암', '탈라타맙', '임델트라', '리브리반트', '투키사', '엔허투']):
-                            fast_track_candidates.append({
-                                'petitSj': title,
-                                'petitRealmNm': '보건의료',
-                                'agreCo': 52647 if '탈라타맙' in title else 50000,
-                                'agreEndDe': r.get('RCP_DT', '2026-07-01'),
-                                'sttusCode': 'CMIT_FRWRD',
-                                'petitId': r.get('PTT_ID', ''),
-                                'petitObjet': '5만 명 달성으로 소관위원회에 회부된 중증질환 신약 급여화 청원입니다.',
-                                'petitCn': title,
-                                'link_override': r.get('LINK_URL', '')
-                            })
-        except Exception as je:
-            print(f"[정보] PTTJUDGE 패스트트랙 보완 수집 제외: {je}")
 
         # 3, 4, 5단계: A/B 교차검증 및 예외 조건 필터링
         valid_fast_track = [item for item in fast_track_candidates if validate_item(item)]
