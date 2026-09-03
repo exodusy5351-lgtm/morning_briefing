@@ -66,7 +66,7 @@ def fetch_latest_morning_email():
 
         service = build('gmail', 'v1', credentials=creds)
 
-        # '아침열기' 또는 '영업' 키워드가 들어간 최신 메일 1건 검색python -m py_compile briefing_agent.py
+        # '아침열기' 또는 '영업' 키워드가 들어간 최신 메일 1건 검색
         query = 'subject:(아침열기 OR 영업방향 OR 절판 OR 6월 OR 7월)'
         results = service.users().messages().list(userId='me', q=query, maxResults=3).execute()
         messages = results.get('messages', [])
@@ -469,6 +469,15 @@ def evaluate_article_cot(title, body="", hook=True):
     ]
     if any(k in text for k in industry_finance_keywords) and not any(
         pk in text for pk in ["가입", "보험료 인상", "특약", "약관", "실손", "담보", "보험금"]
+    ):
+        exclusion = True
+    # 기초자치단체(시/군/구) 단위 복지 지원사업 뉴스 - 정부 보조금 정책이지 민간 보험 세일즈와 무관
+    # (주의: "치료비"/"수술비"만으로는 예외 허용하지 않는다 - 지자체 지원금 기사도 흔히 이 단어를 쓰기 때문에
+    #  과거에 "동대문구/성북구" 등 특정 구 이름만 나열한 목록 + 치료비/수술비 예외로는 "순천시" 같은
+    #  다른 지자체의 지원사업 기사를 걸러내지 못하는 허점이 있었다 — 실제 겪은 버그)
+    # 주의: "보험"은 "국민건강보험공단" 등 정부기관명의 부분 문자열로도 흔히 등장해 예외를 무력화시키므로 제외
+    if re.search(r'[가-힣]{2,}(시|군|구)[,\s]', clean_title) and any(sk in text for sk in ["지원", "지원금", "지원사업"]) and not any(
+        pk in text for pk in ["가입", "특약", "약관", "실손", "보험료", "보험금"]
     ):
         exclusion = True
 
@@ -1945,7 +1954,7 @@ def compile_briefing_data():
             continue
         is_duplicate = False
         for existing_item in top_youtube:
-            if item["title"] == existing_item["title"]:
+            if are_titles_similar(item["title"], existing_item["title"], threshold=0.35):
                 is_duplicate = True
                 break
         if not is_duplicate:
@@ -2125,7 +2134,7 @@ def build_html_card_news(data, today_str, mail_text, notion_url=None):
                 clean_source = item['source'].replace('국민동의청원', '국회청원')
                 petition_summary = (item.get('situation') or '').strip()
                 petition_summary_html = (
-                    f'<p class="petition-item-summary" style="margin-top: 0; margin-bottom: 1.5rem; font-size: 0.85rem; line-height: 1.6; color: var(--text-muted);">{petition_summary}</p>'
+                    f'<div class="sales-hook-card"><span class="hook-badge">📋 청원 배경</span><p class="hook-text">{petition_summary}</p></div>'
                     if petition_summary else ''
                 )
                 card_html = (
