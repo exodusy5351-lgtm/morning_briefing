@@ -780,6 +780,9 @@ def generate_smart_fact_hook(title: str, body: str, category: str, is_promo: boo
     # 2. URL/제목 MD5 해시 기반 4가지 문장 뼈대 템플릿 로테이션 (반복 인상 100% 제거)
     pattern_idx = int(hashlib.md5(title.encode('utf-8')).hexdigest(), 16) % 4
     fact_str = f"({', '.join(unique_facts[:2])})" if unique_facts else ""
+    # 문장 맨 앞 주어 자리에는 괄호형 fact_str이 아닌 팩트 단어 자체를 사용 (예: "(136만원) 적용에 따른..."처럼
+    # 주어 없이 잘려 보이는 비문 방지)
+    lead_fact = unique_facts[0] if unique_facts else None
 
     if is_relief_context:
         return f"의료비 부담을 줄이기 위한 지원 및 혜택 정책{fact_str}이 추진되고 있습니다. 지자체/정부 지원 범위와 함께 보유 중인 보험의 보장 틈새를 사전에 안내해 보세요."
@@ -788,15 +791,15 @@ def generate_smart_fact_hook(title: str, body: str, category: str, is_promo: boo
         templates = [
             f"계절성 질환 및 안전사고 우려{fact_str}가 높아지고 있습니다. 갑작스러운 치료비나 입원비 부담에 대비해 보유 중인 보장 틈새를 사전에 안내해 보세요.",
             f"최근 계절적 위험 요인{fact_str}에 따른 응급실 이용 및 입원 환자가 증가하고 있습니다. 고객님의 응급실 내원비 및 수술비 보장을 사전 점검해 드리는 것이 유리합니다.",
-            f"{fact_str if unique_facts else '계절성 위험 이슈'} 발생 가능성에 대비해, 기존 건강보험의 입원일당과 치료비 한도가 충분한지 미리 확인해 보시길 권장합니다.",
+            f"{lead_fact or '계절성 위험 이슈'} 발생 가능성에 대비해, 기존 건강보험의 입원일당과 치료비 한도가 충분한지 미리 확인해 보시길 권장합니다.",
             f"계절성 질환 및 사고 위험{fact_str}에 대비하여 고객님의 필수 진단비와 치료비 보장 공백을 사전에 점검해 드릴 것을 추천합니다."
         ]
         return templates[pattern_idx]
 
     elif category == "질병·치료비 리얼리티":
         templates = [
-            f"최근 {fact_str if unique_facts else '고액 비급여 치료비'} 관련 수술 및 진료 부담이 커지고 있습니다. 기존 보장에서 해당 항목이 충분히 커버되는지 사전 점검이 필요한 시점입니다.",
-            f"{fact_str if unique_facts else '신의료기술 및 신약 치료'} 적용에 따른 진료비 부담을 대비해, 고객님의 비급여 및 통원비 보장 한도를 사전에 점검해 보세요.",
+            f"최근 {lead_fact or '고액 비급여 치료비'} 관련 수술 및 진료 부담이 커지고 있습니다. 기존 보장에서 해당 항목이 충분히 커버되는지 사전 점검이 필요한 시점입니다.",
+            f"{lead_fact or '신의료기술 및 신약 치료'} 적용에 따른 진료비 부담을 대비해, 고객님의 비급여 및 통원비 보장 한도를 사전에 점검해 보세요.",
             f"고액 치료비 발생 가능성이 높은 이슈{fact_str}와 관련하여, 부족한 암 진단비와 간병 틈새 보장을 사전에 안심 설계해 드리는 것을 권유합니다.",
             f"치료 환경 변화{fact_str}로 본인부담액이 커짐에 따라, 보유 중인 건강보험의 보장 실효성과 한도를 사전에 체크해 보시길 권장합니다."
         ]
@@ -804,8 +807,8 @@ def generate_smart_fact_hook(title: str, body: str, category: str, is_promo: boo
 
     elif category == "제도·정책 이슈":
         templates = [
-            f"최근 {fact_str if unique_facts else '보장 가이드라인'} 관련 급여 기준 및 정책 개정 이슈가 주목받고 있습니다. 기존 실손 및 수술비가 새 제도에서도 유지되는지 점검을 권유합니다.",
-            f"{fact_str if unique_facts else '금융당국 정책'} 변경에 따라 기존 가입 조건의 차별점과 변경 후 보장 조건을 비교 확인해 보시는 것이 유리합니다.",
+            f"최근 {lead_fact or '보장 가이드라인'} 관련 급여 기준 및 정책 개정 이슈가 주목받고 있습니다. 기존 실손 및 수술비가 새 제도에서도 유지되는지 점검을 권유합니다.",
+            f"{lead_fact or '금융당국 정책'} 변경에 따라 기존 가입 조건의 차별점과 변경 후 보장 조건을 비교 확인해 보시는 것이 유리합니다.",
             f"건강보험 및 제도 개편 이슈{fact_str}가 본격화되고 있습니다. 보유 중인 보장 자산의 틈새 항목을 사전에 점검해 드리길 바랍니다.",
             f"보장 가이드라인{fact_str}이 새로 적용됨에 따라, 가입 고객님의 기존 실손 및 보장 한도 유지 여부를 사전 체크해 드리는 것을 추천합니다."
         ]
@@ -813,9 +816,9 @@ def generate_smart_fact_hook(title: str, body: str, category: str, is_promo: boo
 
     elif category == "상품·시장 동향":
         templates = [
-            f"최근 {fact_str if unique_facts else '주요 특약'} 조건의 보장 한도 축소 및 절판 전, 타사 비교 우위와 현재 가입 조건의 이점을 빠르게 점검해 보시길 바랍니다.",
+            f"최근 {lead_fact or '주요 특약'} 조건의 보장 한도 축소 및 절판 전, 타사 비교 우위와 현재 가입 조건의 이점을 빠르게 점검해 보시길 바랍니다.",
             f"시장 동향 변화{fact_str}에 따라 인수 조건 및 한도 변경이 우려됩니다. 현재 가입 중인 특약의 비교 우위를 사전에 점검해 보시는 것이 좋습니다.",
-            f"{fact_str if unique_facts else '타사 상품 동향'} 개편 전 기존 가입 조건의 이점을 고객님께 미리 안내해 드리는 것이 세일즈에 유리합니다.",
+            f"{lead_fact or '타사 상품 동향'} 개편 전 기존 가입 조건의 이점을 고객님께 미리 안내해 드리는 것이 세일즈에 유리합니다.",
             f"주요 보장 한도 조정 이슈{fact_str}와 관련하여 타사 대비 삼성화재의 차별점과 보장 우위를 사전에 점검해 보세요."
         ]
         return templates[pattern_idx]
@@ -999,7 +1002,12 @@ def analyze_youtube_video(title, description, channel=""):
 
     # 2단계: 스마트 팩트 파서 (Gemini 미구동 시에도 영상 제목/설명에서 팩트 명사 및 숫자 추출하여 고품질 요약 생성)
     # 제목 및 본문에서 구체적 수치/보험 팩트 패턴 파싱
-    numbers = re.findall(r'\d+(?:만|억|원|%|세대|년|회)?', title + " " + description)
+    # (전화번호/영상 타임라인이 숫자 팩트로 잘못 추출되는 것을 방지하기 위해 먼저 제거)
+    fact_source_text = title + " " + description
+    fact_source_text = re.sub(r'01[016789][-.\s]?\d{3,4}[-.\s]?\d{4}', '', fact_source_text)
+    fact_source_text = re.sub(r'\d{2,4}[-.]\d{3,4}[-.]\d{4}', '', fact_source_text)
+    fact_source_text = re.sub(r'\d{1,2}:\d{2}(:\d{2})?', '', fact_source_text)
+    numbers = re.findall(r'\d+(?:만|억|원|%|세대|년|회)?', fact_source_text)
     keywords = [w for w in re.findall(r'[가-힣a-zA-Z0-9]+', title + " " + description) 
                 if len(w) >= 2 and w not in STOP_WORDS and not w.isdigit()]
     
@@ -1138,7 +1146,8 @@ def load_recent_urls():
                         date_str = val
                         title = ""
                     dt = datetime.strptime(date_str, "%Y-%m-%d")
-                    if (now - dt).days <= 5:
+                    retention_days = 3 if "youtube.com" in u else 5
+                    if (now - dt).days <= retention_days:
                         valid_urls.add(u)
                         if title:
                             valid_titles.append(title)
@@ -1169,7 +1178,8 @@ def save_recent_urls(new_items):
         try:
             date_str = val.get("date", "") if isinstance(val, dict) else val
             dt = datetime.strptime(date_str, "%Y-%m-%d")
-            if (now - dt).days <= 5:
+            retention_days = 3 if "youtube.com" in u else 5
+            if (now - dt).days <= retention_days:
                 cleaned_dict[u] = val if isinstance(val, dict) else {"date": val, "title": ""}
         except Exception:
             pass
@@ -1599,7 +1609,11 @@ def fetch_youtube_trends(limit=10, recent_published_urls=None):
         "비특치 비통치 보험",
         "무사고 연장 보험",
         "간편심사 3N5 보험",
-        "보험 리모델링 필수"
+        "보험 리모델링 필수",
+        "암 진료비 지원",
+        "비급여 수술비",
+        "유병자 암보험",
+        "보험 리모델링"
     ]
     all_videos = []
     seen_ids = set()
@@ -1611,8 +1625,12 @@ def fetch_youtube_trends(limit=10, recent_published_urls=None):
     for q in queries:
         try:
             encoded_query = urllib.parse.quote(q)
-            url = f"https://www.youtube.com/results?search_query={encoded_query}"
-            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
+            url = f"https://www.youtube.com/results?search_query={encoded_query}&hl=ko&gl=KR"
+            req = urllib.request.Request(url, headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+                "Accept-Language": "ko-KR,ko;q=0.9",
+                "Cookie": "PREF=hl=ko&gl=KR"
+            })
             with urllib.request.urlopen(req, timeout=8, context=context) as response:
                 html = response.read().decode('utf-8')
                 match = re.search(r'var ytInitialData = ({.*?});</script>', html)
@@ -1644,6 +1662,9 @@ def fetch_youtube_trends(limit=10, recent_published_urls=None):
                         if any(ec in channel_lower for ec in exclude_channels) or any(et in title_lower for et in exclude_titles):
                             continue
                         if not any(kw in title_lower or kw in channel_lower for kw in insurance_kws):
+                            continue
+                        # 한글 유효성 안전 필터: 제목+설명에 한글 완성형 음절이 5자 미만인 영문 위주 콘텐츠 배제
+                        if len(re.findall(r'[가-힣]', title + description)) < 5:
                             continue
                         if not is_within_14_days(published_text):
                             continue
@@ -1739,9 +1760,9 @@ def fetch_assembly_petitions():
         valid_fast_track = [item for item in fast_track_candidates if validate_item(item)]
         valid_general = [item for item in general_candidates if validate_item(item)]
 
-        # 동의수 내림차순 정렬
+        # 동의수 내림차순 정렬 (일반 후보는 '동의 진행 중(AGRE_PROGRS)' 상태를 최우선으로, 그다음 동의수 순)
         valid_fast_track.sort(key=lambda x: int(x.get('agreCo') or 0), reverse=True)
-        valid_general.sort(key=lambda x: int(x.get('agreCo') or 0), reverse=True)
+        valid_general.sort(key=lambda x: (x.get('sttusCode') == 'AGRE_PROGRS', int(x.get('agreCo') or 0)), reverse=True)
 
         final_selected = valid_fast_track[:2] + valid_general[:2]
 
@@ -2014,30 +2035,45 @@ def build_mail_text(data, today_str, notion_url=None):
     lines.append("============================================================")
     lines.append("\n오늘 아침 수집된 8대 실전 테마별 팩트 요약 리포트입니다.\n")
 
+    # 동일 라벨 카테고리 병합: 같은 label을 공유하는 cat_id(예: 제도·정책 이슈)가
+    # 각자 헤더를 중복 출력하지 않도록 label 기준으로 items를 먼저 합산한다.
+    label_order = []
+    label_cat_ids = {}
+    label_items_map = {}
     for cat_id, info in CATEGORIES.items():
-        items = data.get(cat_id, [])
+        label = info["label"]
+        if label not in label_items_map:
+            label_items_map[label] = []
+            label_cat_ids[label] = []
+            label_order.append(label)
+        label_items_map[label].extend(data.get(cat_id, []))
+        label_cat_ids[label].append(cat_id)
+
+    for label in label_order:
+        items = label_items_map[label]
+        cat_ids = label_cat_ids[label]
 
         # 상품동향 및 성공/미담 타이틀 커스텀 슬로건 매핑
-        if cat_id == "product_trend":
-            lines.append(f"■ {info['label']} (★신설: 타사 신상품/절판 정보 및 삼성화재 상품과의 실전 비교 우위 분석)")
-        elif cat_id == "motivation":
-            lines.append(f"■ {info['label']} (★ 오늘의 영업 다짐: \"우리가 전달하는 보장은 고객의 내일을 지키는 가장 가치 있고 숭고한 약속입니다.\")")
+        if "product_trend" in cat_ids:
+            lines.append(f"■ {label} (★신설: 타사 신상품/절판 정보 및 삼성화재 상품과의 실전 비교 우위 분석)")
+        elif "motivation" in cat_ids:
+            lines.append(f"■ {label} (★ 오늘의 영업 다짐: \"우리가 전달하는 보장은 고객의 내일을 지키는 가장 가치 있고 숭고한 약속입니다.\")")
         else:
-            lines.append(f"■ {info['label']}")
-            
+            lines.append(f"■ {label}")
+
         if not items:
             lines.append("  (오늘자 최신 동향이 발견되지 않았습니다.)")
         else:
             for idx, item in enumerate(items, 1):
                 lines.append(f"  {idx}. {item['title']}")
-                if cat_id == "youtube":
+                if item.get("category_id") == "youtube":
                     lines.append(f"     - 채널: {item['source']} | {item.get('view_count_str', '')} | {item['pub_date_str']}")
                 else:
                     lines.append(f"     - 출처: {item['source']} | {item['pub_date_str']}")
                 lines.append(f"     - 바로가기: {item['link']}")
-                
+
                 # 성공/미담 카테고리에 동기부여 코멘트 삽입
-                if cat_id == "motivation":
+                if "motivation" in cat_ids:
                     lines.append("     - [활동 동기부여] 고객의 삶을 든든하게 지킨 설계사님의 성공적인 동행 사례입니다. 오늘도 자랑스러운 전업 설계사의 자부심을 안고 현장으로 힘차게 나아갑시다!")
         lines.append("")
         
@@ -3042,7 +3078,9 @@ def push_to_github():
         print("[CI] push_to_github 생략 (Actions 가 직접 커밋)")
         return
     import subprocess
-    deploy_dir = "deploy"
+    # deploy/ 저장소 안에서 직접 스크립트를 실행하는 경우(cwd 자체가 이미 deploy repo)와
+    # 상위 폴더에서 실행하는 경우(deploy/ 하위 폴더로 접근) 모두 지원
+    deploy_dir = "." if os.path.isdir(".git") else "deploy"
     if not os.path.exists(os.path.join(deploy_dir, ".git")):
         print("[정보] deploy 폴더 내에 Git 저장소가 초기화되지 않았습니다. 업로드를 생략합니다.")
         return
@@ -3216,7 +3254,8 @@ def main():
     html_filename = f"morning_briefing_{file_suffix}.html"
     
     # 넷리파이(Netlify) 업로드용 deploy 폴더 자동 구성
-    deploy_dir = "." if CI_MODE else "deploy"
+    # (CI 환경이거나, deploy repo 내부에서 직접 실행 중이면 현재 폴더를 그대로 사용)
+    deploy_dir = "." if (CI_MODE or os.path.isdir(".git")) else "deploy"
     if not os.path.exists(deploy_dir):
         os.makedirs(deploy_dir)
     deploy_html_path = os.path.join(deploy_dir, "index.html")
@@ -3256,10 +3295,12 @@ def main():
         print(f"[오류] 넷리파이 배포용 파일 생성 실패: {e}")
         
     # 깃허브 자동 배포 트리거 호출 (deploy 폴더의 최신 index.html 푸시)
-    if not DRY_RUN:
-        push_to_github()
-    else:
-        print("[DRY-RUN] 깃허브 자동 배포 생략")
+    # NOTE: 로컬 테스트 모드 — 원격 푸시 임시 비활성화 (요청 시 주석 해제)
+    # if not DRY_RUN:
+    #     push_to_github()
+    # else:
+    #     print("[DRY-RUN] 깃허브 자동 배포 생략")
+    print("[로컬 테스트 모드] 깃허브 자동 배포 건너뜀 (push_to_github 비활성화됨)")
     
     elapsed = time.time() - start_t
     tot = GEMINI_STATS["total_articles"]
