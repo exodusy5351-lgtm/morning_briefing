@@ -568,13 +568,12 @@ def evaluate_article_cot(title, body="", hook=True):
     if adopted:
         if is_promo or any(k in text for k in ["상품 출시", "신상품", "절판", "한도축소", "한도 축소", "특약", "담보", "보험 상품", "상품 승부", "통합치료비 상품", "손해율", "자동차보험", "차보험", "보험료 인상", "보험료", "3단 보장", "3단보장"]):
             category = "상품·시장 동향"
-        elif any(k in text for k in ["폭염", "온열질환", "물놀이", "장마", "태풍", "식중독", "빙판길", "낙상", "환절기", "독감"]):
-            category = "시즌·이슈"
         elif any(k in text for k in ["실손 개정", "금감원", "건보", "급여화", "관리급여", "가이드라인", "제도 변경", "정책", "심사 강화", "심사기준", "보상기준"]):
             category = "제도·정책 이슈"
         elif any(k in text for k in ["간병비", "간병인", "간병파산", "간병지옥", "요양병원 간병", "간병"]):
             category = "간병·돌봄 대란"
-        elif any(k in text for k in ["암", "재발", "신약", "완치", "치료비", "수술비", "전이", "항암", "표적", "중입자", "투병", "병원비", "입원", "의료비", "본인부담", "억", "날벼락", "환자", "사연", "부담", "치료"]):
+        elif any(k in text for k in ["암", "재발", "신약", "완치", "치료비", "수술비", "전이", "항암", "표적", "중입자", "투병", "병원비", "입원", "의료비", "본인부담", "억", "날벼락", "환자", "사연", "부담", "치료", "폭염", "온열질환", "물놀이", "장마", "태풍", "식중독", "빙판길", "낙상", "환절기", "독감"]):
+            # (시즌·이슈 카테고리는 삭제됨 — 계절성 질환 기사는 치료비 관점으로 흡수)
             category = "질병·치료비 리얼리티"
         elif any(k in text for k in ["성공", "동기부여", "mdrt", "보험왕", "미담", "설계사"]):
             category = "성공·동기부여"
@@ -810,16 +809,7 @@ def generate_smart_fact_hook(title: str, body: str, category: str, is_promo: boo
     if is_relief_context:
         return f"{topic + ' 관련 ' if topic else ''}의료비 부담을 줄이는 지원 정책이 추진되고 있습니다. 공적 지원이 늘어나도 비급여·간병비는 여전히 본인 부담이니, 지원 범위와 함께 보유 보험의 보장 틈새를 안내해 보세요."
 
-    if category == "시즌·이슈":
-        templates = [
-            "계절성 질환과 안전사고가 늘어나는 시기입니다. 갑작스러운 입원·수술비 부담에 대비해 보유 중인 보장 틈새를 미리 안내해 보세요.",
-            "응급실 내원과 입원 환자가 늘어나는 계절입니다. 고객님의 응급실 내원비·입원일당·수술비 보장을 사전에 점검해 드리세요.",
-            f"{topic or '계절성 질환'} 관련 위험이 커지는 시기입니다. 입원일당과 치료비 한도가 충분한지 미리 확인해 보시길 권장합니다.",
-            "계절성 질환·사고 위험에 대비해 고객님의 필수 진단비와 치료비 보장 공백을 사전에 점검해 드리세요."
-        ]
-        return _pick(templates) + money_note
-
-    elif category == "질병·치료비 리얼리티":
+    if category == "질병·치료비 리얼리티":
         templates = [
             f"{med_topic or '고가 신약·신의료기술'} 관련 소식입니다. 치료가 길어질수록 비급여 약제비와 치료비 부담이 커지니, 기존 보장으로 충분히 커버되는지 점검해 드리세요.",
             f"{med_topic or '중증질환'} 치료 환경이 빠르게 바뀌고 있습니다. 표적항암·신약 치료비와 비급여 통원비 보장 한도가 지금 기준에 맞는지 확인해 보세요.",
@@ -1391,6 +1381,20 @@ def fetch_category_news(cat_id, info, limit=8):
                     print(f"      [필터링] 타사 사회공헌/후원 기사 원천 차단: {clean_title}")
                     continue
 
+            # 농작물/작황 관련 무관 기사 차단 (쌀값·배추값 등 시황 기사가 세제/보장 키워드에 오검색되는 경우)
+            crop_keywords = ["농작물", "작황", "재배", "수확량", "쌀값", "배추값", "농산물", "풍작", "흉작", "김장물가"]
+            if any(kw in title_lower for kw in crop_keywords):
+                print(f"      [필터링] 농작물/작황 관련 무관 기사 차단: {clean_title}")
+                continue
+
+            # 해외 정부/제도 관련 기사 차단 (국내 보험 영업과 무관한 일본/미국 등 타국 정책 뉴스)
+            foreign_country_kws = ["일본", "미국", "중국", "영국", "프랑스", "독일", "호주", "캐나다", "스위스", "유럽연합"]
+            foreign_system_kws = ["정부", "제도", "정책", "당국", "세제", "법안", "의회", "규제", "국채", "중앙은행"]
+            if any(fc in title_lower for fc in foreign_country_kws) and any(fs in title_lower for fs in foreign_system_kws):
+                if not any(kk in title_lower for kk in ["한국", "국내", "삼성화재", "금감원"]):
+                    print(f"      [필터링] 해외제도/정책 관련 무관 기사 차단: {clean_title}")
+                    continue
+
             # 지자체/구청 방문진료 등 단체 복지 사업 기사 (민간 보험 세일즈 무관) 차단
             local_welfare_keywords = ["방문진료", "구청", "주민센터", "동사무소", "보건소 지원", "복지관", "무료 진료", "돌봄 바우처", "동대문구", "성북구", "강북구"]
             if any(kw in title_lower for kw in local_welfare_keywords):
@@ -1683,6 +1687,10 @@ def fetch_youtube_trends(limit=10, recent_published_urls=None):
     exclude_titles = ["인사", "동정", "임명", "인사발령", "속보", "보도", "토론회"]
     insurance_kws = ["보험", "실비", "실손", "수술비", "암", "보상", "보험금", "치료비", "간편심사", "유병자", "청구", "설계사", "종수술비", "mdrt"]
 
+    # 전화번호/상담시간 안내성 광고 영상 차단용 정규식·키워드
+    phone_re = re.compile(r'(01[016789][-.\s]?\d{3,4}[-.\s]?\d{4})|(\d{2,4}-\d{3,4}-\d{4})')
+    time_ad_kws = ["상담시간", "상담 시간", "상담전화", "상담 전화", "문의전화", "문의 전화", "무료상담", "콜센터", "고객센터", "카톡상담", "전화상담", "평일 09"]
+
     for q in queries:
         try:
             encoded_query = urllib.parse.quote(q)
@@ -1726,6 +1734,9 @@ def fetch_youtube_trends(limit=10, recent_published_urls=None):
                             continue
                         # 한글 유효성 안전 필터: 제목+설명에 한글 완성형 음절이 5자 미만인 영문 위주 콘텐츠 배제
                         if len(re.findall(r'[가-힣]', title + description)) < 5:
+                            continue
+                        combined_text = f"{title} {description}"
+                        if phone_re.search(combined_text) or any(kw in combined_text for kw in time_ad_kws):
                             continue
                         if not is_within_14_days(published_text):
                             continue
@@ -1805,6 +1816,9 @@ def fetch_assembly_petitions():
             st_code = item.get('sttusCode', '')
             if agre_co >= 50000 or st_code == 'CMIT_FRWRD':
                 fast_track_candidates.append(item)
+            elif st_code == 'AGRE_PROGRS':
+                # 국민동의청원 '동의 진행 중(onGoingAll)' 실시간 후보 (등록 45일 제한과 무관하게 포함)
+                general_candidates.append(item)
             else:
                 dt_str = item.get('agreBeginDe') or item.get('petitRegistDt') or ''
                 if dt_str:
@@ -1836,14 +1850,10 @@ def fetch_assembly_petitions():
             title_prefix = "[5만달성] " if is_50k else ""
             title = title_prefix + item.get('petitSj', '')
 
-            if item.get('link_override'):
-                link = item['link_override']
-                source_label = "국민동의청원 원문 (5만명 달성 회부)"
-            else:
-                path = 'onGoingAll' if st_code == 'AGRE_PROGRS' else ('cmtReferred' if st_code == 'CMIT_FRWRD' else 'registered')
-                petit_id = item.get('petitId', '')
-                link = f"https://petitions.assembly.go.kr/proceed/{path}/{petit_id}"
-                source_label = "국민동의청원 원문 (5만명 달성 회부)" if is_50k else "국민동의청원 원문 (동의 진행 중)"
+            path = 'onGoingAll' if st_code == 'AGRE_PROGRS' else ('cmtReferred' if st_code == 'CMIT_FRWRD' else 'registered')
+            petit_id = item.get('petitId', '')
+            link = f"https://petitions.assembly.go.kr/proceed/{path}/{petit_id}"
+            source_label = "국민동의청원 원문 (5만명 달성 회부)" if is_50k else "국민동의청원 원문 (동의 진행 중)"
             
             realm = item.get('petitRealmNm', '보건의료')
             end_de = (item.get('agreEndDe') or '')[:10]
@@ -2939,7 +2949,6 @@ def build_notion_blocks(data):
     label_emoji = {
         "제도·정책 이슈":          "📋",
         "질병·치료비 리얼리티":    "💊",
-        "시즌·이슈":               "☀️",
         "상품·시장 동향":          "📊",
         "성공·동기부여":           "⭐",
         "유튜브 핫이슈":           "▶️",
@@ -2950,7 +2959,6 @@ def build_notion_blocks(data):
     label_color = {
         "제도·정책 이슈":          "blue_background",
         "질병·치료비 리얼리티":    "green_background",
-        "시즌·이슈":               "gray_background",
         "상품·시장 동향":          "default",
         "성공·동기부여":           "purple_background",
         "유튜브 핫이슈":           "red_background",
