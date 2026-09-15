@@ -105,7 +105,7 @@ if "6천만원" not in yt2 or "236만원" not in yt2 or "차이가 날까요" no
     fails.append(f"유튜브: 수치/설명 문장 누락: {yt2}")
 
 
-# 5. Gemini 재시도(503 두 번 후 성공) + 서킷 브레이커
+# 5. Gemini 재시도(503 → 504 후 성공) + 서킷 브레이커
 class _Resp:
     text = '{"ok": 1}'
 
@@ -119,7 +119,7 @@ class _FakeClient:
     def generate_content(self, **kw):
         _FakeClient.calls += 1
         if _FakeClient.calls < 3:
-            raise RuntimeError("503 UNAVAILABLE")
+            raise RuntimeError("503 UNAVAILABLE" if _FakeClient.calls == 1 else "504 DEADLINE_EXCEEDED")
         return _Resp()
 
 

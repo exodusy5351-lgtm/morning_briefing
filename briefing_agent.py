@@ -32,7 +32,8 @@ _QUOTA_LOCK = threading.Lock()
 # - 연속 실패 시 이번 실행에서는 호출을 끊어(서킷 브레이커) 전체 실행 시간이 늘어지지 않게 함
 _GEMINI_SEM = threading.Semaphore(2)
 _GEMINI_FAIL_STREAK = [0]
-GEMINI_TIMEOUT_MS = 20000
+# SDK가 이 값을 X-Server-Timeout 헤더로 서버에도 전달함 → 서버가 이 시간 안에 못 끝내면 504 DEADLINE_EXCEEDED
+GEMINI_TIMEOUT_MS = 30000
 GEMINI_MAX_ATTEMPTS = 3
 GEMINI_BREAKER_LIMIT = 4
 
@@ -55,6 +56,9 @@ def gemini_generate(api_key, prompt, temperature=0.2):
                     config=types.GenerateContentConfig(
                         response_mime_type="application/json",
                         temperature=temperature,
+                        # 화법 1~2문장 생성에는 깊은 추론이 불필요 — 생각 단계가 길어 짧은 요청도 20초를 넘겨
+                        # 504/타임아웃으로 실패하던 문제(실측 25.8초 후 504) 완화
+                        thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.LOW),
                     ),
                 )
             _GEMINI_FAIL_STREAK[0] = 0
@@ -62,7 +66,8 @@ def gemini_generate(api_key, prompt, temperature=0.2):
         except Exception as e:
             last_err = e
             msg = f"{type(e).__name__}: {e}"
-            retryable = any(k in msg for k in ["429", "RESOURCE_EXHAUSTED", "503", "UNAVAILABLE", "500", "INTERNAL", "Timeout", "timed out"])
+            retryable = any(k in msg for k in ["429", "RESOURCE_EXHAUSTED", "503", "UNAVAILABLE", "504", "DEADLINE_EXCEEDED",
+                                               "500", "INTERNAL", "Timeout", "timed out"])
             if not retryable or attempt == GEMINI_MAX_ATTEMPTS - 1:
                 break
             # 서버가 알려준 대기 시간(retryDelay)이 있으면 따르고, 없으면 3초 → 6초 지수 백오프 (최대 20초)
