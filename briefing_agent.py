@@ -10,6 +10,7 @@ import json
 import difflib
 import hashlib
 from html.parser import HTMLParser
+from html import escape as _html_escape
 import time
 import base64
 import concurrent.futures
@@ -23,8 +24,54 @@ try:
 except Exception:
     pass
 
-_LLM_POOL = concurrent.futures.ThreadPoolExecutor(max_workers=4)
 _QUOTA_LOCK = threading.Lock()
+
+# Gemini 호출 안정화 설정
+# - 9개 테마가 병렬로 돌면서 한꺼번에 몰리면 429(무료 한도)/503(과부하)이 폭증하므로 동시 호출 수를 제한
+# - 기존 8초 타임아웃은 스레드풀 대기 시간까지 포함돼 순서가 뒤인 요청이 대기만 하다 실패했음 → 요청 자체에만 타임아웃 적용
+# - 연속 실패 시 이번 실행에서는 호출을 끊어(서킷 브레이커) 전체 실행 시간이 늘어지지 않게 함
+_GEMINI_SEM = threading.Semaphore(2)
+_GEMINI_FAIL_STREAK = [0]
+GEMINI_TIMEOUT_MS = 20000
+GEMINI_MAX_ATTEMPTS = 3
+GEMINI_BREAKER_LIMIT = 4
+
+
+def gemini_generate(api_key, prompt, temperature=0.2):
+    """Gemini 공용 호출: 동시성 제한 + 요청 타임아웃 + 429/503/타임아웃 재시도 + 서킷 브레이커.
+    최종 실패 시 예외를 그대로 올려 호출부의 폴백 로직이 동작하게 한다."""
+    if _GEMINI_FAIL_STREAK[0] >= GEMINI_BREAKER_LIMIT:
+        raise RuntimeError("Gemini 연속 실패로 이번 실행에서 호출 중단(서킷 브레이커)")
+    from google import genai
+    from google.genai import types
+    client = genai.Client(api_key=api_key, http_options=types.HttpOptions(timeout=GEMINI_TIMEOUT_MS))
+    last_err = None
+    for attempt in range(GEMINI_MAX_ATTEMPTS):
+        try:
+            with _GEMINI_SEM:
+                response = client.models.generate_content(
+                    model='gemini-3.5-flash',
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json",
+                        temperature=temperature,
+                    ),
+                )
+            _GEMINI_FAIL_STREAK[0] = 0
+            return response
+        except Exception as e:
+            last_err = e
+            msg = f"{type(e).__name__}: {e}"
+            retryable = any(k in msg for k in ["429", "RESOURCE_EXHAUSTED", "503", "UNAVAILABLE", "500", "INTERNAL", "Timeout", "timed out"])
+            if not retryable or attempt == GEMINI_MAX_ATTEMPTS - 1:
+                break
+            # 서버가 알려준 대기 시간(retryDelay)이 있으면 따르고, 없으면 3초 → 6초 지수 백오프 (최대 20초)
+            m = re.search(r"retry(?:Delay)?\D{0,6}(\d+(?:\.\d+)?)s", msg, re.I)
+            wait = min(float(m.group(1)), 20.0) if m else 3.0 * (2 ** attempt)
+            print(f"      [Gemini 재시도 {attempt + 1}/{GEMINI_MAX_ATTEMPTS - 1}] {msg[:50]} -> {wait:.1f}초 대기")
+            time.sleep(wait)
+    _GEMINI_FAIL_STREAK[0] += 1
+    raise last_err
 # =========================================================================
 # Gmail API 연동 함수 (지점장 아침열기 메일 연동 모듈)
 # =========================================================================
@@ -298,11 +345,6 @@ def generate_daily_insight(data):
             api_key = get_gemini_api_key()
             if api_key:
                 try:
-                    from google import genai
-                    from google.genai import types
-                    import concurrent.futures
-
-                    client = genai.Client(api_key=api_key)
                     facts_str = "\n".join(top_facts[:6])
 
                     prompt = f"""
@@ -323,22 +365,7 @@ def generate_daily_insight(data):
                     }}
                     """
 
-                    def call_gemini_insight():
-                        return client.models.generate_content(
-                            model='gemini-3.5-flash',
-                            contents=prompt,
-                            config=types.GenerateContentConfig(
-                                response_mime_type="application/json",
-                                temperature=0.4,
-                            ),
-                        )
-
-                    future = _LLM_POOL.submit(call_gemini_insight)
-                    try:
-                        response = future.result(timeout=8.0)
-                    except concurrent.futures.TimeoutError:
-                        future.cancel()
-                        raise
+                    response = gemini_generate(api_key, prompt, temperature=0.4)
 
                     res_data = json.loads(response.text)
                     insight_res = res_data.get("market_insight", "").strip()
@@ -402,24 +429,32 @@ def evaluate_article_cot(title, body="", hook=True):
         hits.append("a")
 
     # b. 신약·신의료기술 등장 및 비급여/급여제한 고비용
-    if any(k in text for k in ["신약", "표적", "항암", "면역항암", "로봇수술", "중입자", "비급여", "치료비", "수술비", "약제비", "치료제", "본인부담", "고액", "암", "희귀질환", "난치"]):
+    # (주의: "수술"/"진료비" 등 핵심 단어가 빠져 있어 "로봇수술 336배" 같은 수술비 기사가 1개만 적중해 탈락하던 문제 보완)
+    if any(k in text for k in ["신약", "표적", "항암", "면역항암", "로봇수술", "중입자", "비급여", "치료비", "수술비", "약제비", "치료제", "본인부담", "고액", "암", "희귀질환", "난치", "수술", "진료비", "의료비", "병원비"]):
         hits.append("b")
 
-    # c. 실손보험/기존 보장의 사각지대
-    if any(k in text for k in ["실손", "사각지대", "청구 거절", "보장 안 됨", "지급 제한", "본인부담", "면책", "제한", "부담"]):
+    # c. 실손보험/기존 보장의 사각지대 (보험금 청구·해지·고지의무·의료자문 등 보험금 분쟁 이슈 포함)
+    if any(k in text for k in ["실손", "사각지대", "청구 거절", "보장 안 됨", "지급 제한", "본인부담", "면책", "제한", "부담",
+                               "보험금", "해지", "고지의무", "의료자문", "보상기준", "보상 기준", "부지급", "지급 거절", "청구",
+                               "문턱", "보장공백", "보장 공백"]):
         hits.append("c")
 
-    # d. 제도/정책 변경 -> 가입/리모델링 필요성 생성
-    if any(k in text for k in ["제도", "개정", "급여화", "관리급여", "정책", "가이드라인", "기준 변경", "전환", "금융감독원", "금감원", "복지부"]):
+    # d. 제도/정책 변경 -> 가입/리모델링 필요성 생성 (법원 판결로 보상 기준이 바뀌는 경우 포함)
+    if any(k in text for k in ["제도", "개정", "급여화", "관리급여", "정책", "가이드라인", "기준 변경", "전환", "금융감독원", "금감원", "복지부",
+                               "판결", "법원", "산정특례", "약관", "심사 강화", "심사기준", "약가"]):
         hits.append("d")
 
     # e. 고액 치료비 실사례, 환자/보호자 감정 공감 및 위기의식 형성
-    if any(k in text for k in ["재발", "투병", "사연", "환자", "생존", "완치", "눈물", "고통", "가계 붕괴", "전이", "위험", "발병", "사망"]):
+    if any(k in text for k in ["재발", "투병", "사연", "환자", "생존", "완치", "눈물", "고통", "가계 붕괴", "전이", "위험", "발병", "사망", "폭증", "급증"]):
         hits.append("e")
 
     # f. 경쟁사 신상품, 절판 임박, 타사 대비 우위 비교
     if any(k in text for k in ["절판", "신상품", "담보", "한도", "특약", "우위", "비교", "업라이팅", "인상", "출시"]):
         hits.append("f")
+
+    # g. 간병·돌봄·요양 (간병이 체크리스트에 없어 간병 기사가 구조적으로 2개 적중을 못 채워 9일간 0건이던 문제 보완)
+    if any(k in text for k in ["간병", "요양", "치매", "돌봄"]):
+        hits.append("g")
 
     hits = sorted(list(set(hits)))
 
@@ -465,11 +500,22 @@ def evaluate_article_cot(title, body="", hook=True):
     industry_finance_keywords = [
         "예보료", "예금보험료", "지급여력비율", "k-ics", "킥스", "재무건전성", "자본확충",
         "신용등급", "지배구조", "이사회", "주주총회", "배당", "자사주", "실적발표", "분기 실적",
-        "영업이익", "당기순이익", "특별기여금"
+        "영업이익", "당기순이익", "특별기여금",
+        # "상반기 車보험 총손익 37.7%↓…6년만 적자전환" 같은 보험사 손익 기사가 새어 나온 사례 보완
+        "총손익", "보험손익", "투자손익", "순손실", "적자", "흑자전환", "순이익"
     ]
     if any(k in text for k in industry_finance_keywords) and not any(
         pk in text for pk in ["가입", "보험료 인상", "특약", "약관", "실손", "담보", "보험금"]
     ):
+        exclusion = True
+    # 공적 사회보험(산재·고용보험, 국민연금 등) 기사 - 민간 보험 세일즈와 무관
+    # (예: "부산 배달·대리기사 산재보험료 부담 줄인다" — "산재보험료"의 "보험료"가 지자체 예외 목록을 통과시켜 새어 나왔음)
+    if any(k in text for k in ["산재보험", "산재보상", "고용보험", "국민연금", "기초연금"]) and not any(
+        pk in text for pk in ["실손", "특약", "약관", "민간보험", "사보험", "보험사"]
+    ):
+        exclusion = True
+    # 공모전/시상 기사 (예: "동의대 학생팀, 가족간병 보험 개선안으로 금감원장상") - 키워드는 맞아도 영업 소재가 아님
+    if any(k in text for k in ["공모전", "시상식", "장관상", "원장상", "수상작", "상 수상"]):
         exclusion = True
     # 기초자치단체(시/군/구) 단위 복지 지원사업 뉴스 - 정부 보조금 정책이지 민간 보험 세일즈와 무관
     # (주의: "치료비"/"수술비"만으로는 예외 허용하지 않는다 - 지자체 지원금 기사도 흔히 이 단어를 쓰기 때문에
@@ -484,7 +530,7 @@ def evaluate_article_cot(title, body="", hook=True):
     # STEP 4. 최종 채택 판단 (체크리스트 2개 이상 또는 주요 질병/시즌 이슈 + 보험/치료비 맥락 키워드 필수 + 제외조건 없음)
     context_keywords = [
         "보험", "실손", "보장", "특약", "담보", "치료비", "수술비", "병원비", "비급여",
-        "본인부담", "암", "신약", "간병", "리모델링"
+        "본인부담", "암", "신약", "간병", "리모델링", "수술", "진료비", "의료비", "보상기준"
     ]
     has_context = any(k in text for k in context_keywords)
     adopted = (
@@ -524,7 +570,7 @@ def evaluate_article_cot(title, body="", hook=True):
             category = "상품·시장 동향"
         elif any(k in text for k in ["폭염", "온열질환", "물놀이", "장마", "태풍", "식중독", "빙판길", "낙상", "환절기", "독감"]):
             category = "시즌·이슈"
-        elif any(k in text for k in ["실손 개정", "금감원", "건보", "급여화", "관리급여", "가이드라인", "제도 변경", "정책"]):
+        elif any(k in text for k in ["실손 개정", "금감원", "건보", "급여화", "관리급여", "가이드라인", "제도 변경", "정책", "심사 강화", "심사기준", "보상기준"]):
             category = "제도·정책 이슈"
         elif any(k in text for k in ["간병비", "간병인", "간병파산", "간병지옥", "요양병원 간병", "간병"]):
             category = "간병·돌봄 대란"
@@ -553,7 +599,8 @@ def evaluate_article_cot(title, body="", hook=True):
         "category": category if adopted else None,
         "sales_hook": sales_hook,
         "fact_summary": fact_summary,
-        "is_promo": is_promo
+        "is_promo": is_promo,
+        "has_context": has_context
     }
 
 
@@ -629,11 +676,6 @@ def generate_sales_hook_gemini(title: str, article_body: str, is_promo: bool = F
     is_overtreatment = any(ok in text_content.lower() for ok in ["과잉진료", "손해율", "도덕적 해이", "도수치료", "비급여 누수", "의사 탓", "보험금 누수"])
 
     try:
-        from google import genai
-        from google.genai import types
-
-        client = genai.Client(api_key=api_key)
-
         if is_overtreatment:
             prompt = f"""
             당신은 실손보험과 보장분석 전문가입니다.
@@ -691,55 +733,22 @@ def generate_sales_hook_gemini(title: str, article_body: str, is_promo: bool = F
             }}
             """
 
-        def call_gemini():
-            if client is None:
-                raise RuntimeError("Gemini client not initialized")
-            response = client.models.generate_content(
-                model='gemini-3.5-flash',
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    temperature=0.2,
-                ),
-            )
-            return response
+        # 재시도/타임아웃/동시성 제한은 gemini_generate()가 담당
+        response = gemini_generate(api_key, prompt, temperature=0.2)
+        data = json.loads(response.text)
+        fact = data.get("fact_extracted")
+        hook = data.get("sales_hook")
 
-        import concurrent.futures
-        import time
-
-        # Rate Limit (429) 대비 최대 2회 지연 재시도 (Retry)
-        for attempt in range(2):
-            try:
-                future = _LLM_POOL.submit(call_gemini)
-                try:
-                    response = future.result(timeout=8.0)
-                except concurrent.futures.TimeoutError:
-                    future.cancel()
-                    raise
-                data = json.loads(response.text)
-                fact = data.get("fact_extracted")
-                hook = data.get("sales_hook")
-
-                if fact and str(fact).lower() != "null" and hook:
-                    GEMINI_STATS["gemini_success"] += 1
-                    print(f"      [Gemini 3.5 Flash (쿼터 사용 {GEMINI_QUOTA_USED}/{GEMINI_QUOTA_LIMIT})] 화법 생성 성공{' (과잉진료/손해율톤)' if is_overtreatment else ''}: '{title[:20]}...'")
-                    return hook.replace('💡 현장 화법 포인트: ', '').replace('💡 현장 화법 포인트:', '').replace('💡 경쟁사 상품 참고 메모: ', '').replace('💡 경쟁사 상품 참고 메모:', '').strip()
-                break
-            except Exception as e:
-                err_msg = str(e)
-                if ("429" in err_msg or "RESOURCE_EXHAUSTED" in err_msg) and attempt == 0:
-                    print(f"      [Gemini API 429 Rate Limit] 2.5초 대기 후 1회 재시도(Retry) 중...")
-                    time.sleep(2.5)
-                    continue
-                else:
-                    GEMINI_STATS["fallback_api_failed"] += 1
-                    print(f"      [Gemini API 실패] ({err_msg[:40]}) -> 스마트 파서 구동")
-                    return ""
+        if fact and str(fact).lower() != "null" and hook:
+            GEMINI_STATS["gemini_success"] += 1
+            print(f"      [Gemini 3.5 Flash (쿼터 사용 {GEMINI_QUOTA_USED}/{GEMINI_QUOTA_LIMIT})] 화법 생성 성공{' (과잉진료/손해율톤)' if is_overtreatment else ''}: '{title[:20]}...'")
+            return hook.replace('💡 현장 화법 포인트: ', '').replace('💡 현장 화법 포인트:', '').replace('💡 경쟁사 상품 참고 메모: ', '').replace('💡 경쟁사 상품 참고 메모:', '').strip()
 
         GEMINI_STATS["fallback_api_failed"] += 1
         return ""
     except Exception as e:
         GEMINI_STATS["fallback_api_failed"] += 1
+        print(f"      [Gemini API 실패] ({(str(e) or type(e).__name__)[:40]}) -> 스마트 파서 구동")
         return ""
 
 
@@ -749,6 +758,7 @@ GEMINI_QUOTA_USED = 0
 DISABLE_GEMINI_FLAG = "--no-gemini" in sys.argv
 CI_MODE = "--ci" in sys.argv
 DRY_RUN = "--dry-run" in sys.argv
+_USED_HOOKS = set()  # 이번 실행에서 이미 쓴 스마트 파서 화법 (카드 간 문장 중복 방지)
 
 def generate_smart_fact_hook(title: str, body: str, category: str, is_promo: bool = False) -> str:
     """
@@ -769,62 +779,101 @@ def generate_smart_fact_hook(title: str, body: str, category: str, is_promo: boo
     relief_kws = ["의료비 부담 완화", "부담 완화", "의료비 완화", "본인부담 상한제", "100만 원 상한제", "100만원 상한제", "지원 조례", "입법예고"]
     is_relief_context = any(rk in text.lower() for rk in relief_kws)
 
-    # 1. 팩트 추출: 순수 숫자 단독("50년", "2000만", "9만")은 엄격 제외하고, 단위 결합 수치(억/원/%) 또는 명사/병명 우선 추출
-    meaningful_facts = re.findall(r"\d+(?:만\s?원|억\s?원|%|건|명)|[가-힣A-Za-z0-9]+(?:대장암|위암|폐암|간암|유방암|췌장암|치료제|신약|수술비|치료비|진료비|통원비|급여|비급여|고지의무|리모델링|상한제|입법예고|조례|간병비|간병인|특약)", text)
-    unique_facts = []
-    stop_kws = {"기자", "뉴스", "오늘", "관련", "위한", "대한", "통해", "경우", "최대", "국내", "최초", "보험", "추진", "완화", "이슈", "뉴스1", "뉴시스", "50년", "년", "1위", "2위", "3위"}
-    for f in meaningful_facts:
-        if len(f) >= 2 and not f.isdigit() and f not in stop_kws and f not in unique_facts:
-            unique_facts.append(f)
+    # 1. 팩트 추출: 주제어(병명/약/제도 용어)와 금액을 분리해서 추출
+    #  - 병명 단독("유방암")도 잡히도록 앞 글자를 0개 이상(*) 허용 (기존 +는 단독 병명을 놓쳐 서로 다른 기사 카드에 같은 문장이 찍혔음)
+    #  - 숫자는 문장 주어로 쓰지 않음 ("80% 조건의 보장 한도 축소", "(7%)" 같은 비문 방지 — 카드 제목에 이미 수치가 보임)
+    #  - 금액만 소수점/천단위 포함해 보조 문장으로 언급 ("37.7%"가 "7%"로 잘리던 정규식 버그 수정)
+    topic_words = re.findall(r"[가-힣A-Za-z0-9]*(?:대장암|위암|폐암|간암|유방암|췌장암|갑상선암|전립선암|혈액암|림프종|백혈병|희귀질환|난치질환|치매|뇌졸중|심근경색|치료제|신약|수술비|치료비|진료비|통원비|비급여|고지의무|리모델링|상한제|산정특례|간병비|간병인|특약|실손)", text)
+    topics = []
+    for w in topic_words:
+        if len(w) >= 2 and w not in topics:
+            topics.append(w)
+    topic = topics[0] if topics else None
+    money = next(iter(re.findall(r"\d+(?:[.,]\d+)*\s?(?:천만|백만|만|억|조)\s?원", text)), None)
+    money_note = f" 기사에 나온 금액({money})도 상담 때 함께 짚어 보세요." if money else ""
 
-    # 2. URL/제목 MD5 해시 기반 4가지 문장 뼈대 템플릿 로테이션 (반복 인상 100% 제거)
+    # 치료 화법의 주어는 병명/약 이름만 사용 ("실손 관련 새 치료 소식" 같은 비문 방지)
+    med_topic = next((w for w in topics if re.search(r"(암|종|병|질환|치매|뇌졸중|심근경색|치료제|신약)$", w)), None)
+
+    # 2. 제목 MD5 해시 기반 문장 뼈대 템플릿 로테이션 (반복 인상 제거)
     pattern_idx = int(hashlib.md5(title.encode('utf-8')).hexdigest(), 16) % 4
-    fact_str = f"({', '.join(unique_facts[:2])})" if unique_facts else ""
-    # 문장 맨 앞 주어 자리에는 괄호형 fact_str이 아닌 팩트 단어 자체를 사용 (예: "(136만원) 적용에 따른..."처럼
-    # 주어 없이 잘려 보이는 비문 방지)
-    lead_fact = unique_facts[0] if unique_facts else None
+
+    def _pick(templates):
+        # 같은 실행에서 이미 쓴 문장은 건너뛰어 카드마다 화법이 겹치지 않게 함 (간병 카드 3장이 같은 문장이던 문제)
+        for k in range(len(templates)):
+            cand = templates[(pattern_idx + k) % len(templates)]
+            if cand not in _USED_HOOKS:
+                break
+        _USED_HOOKS.add(cand)
+        return cand
 
     if is_relief_context:
-        return f"의료비 부담을 줄이기 위한 지원 및 혜택 정책{fact_str}이 추진되고 있습니다. 지자체/정부 지원 범위와 함께 보유 중인 보험의 보장 틈새를 사전에 안내해 보세요."
+        return f"{topic + ' 관련 ' if topic else ''}의료비 부담을 줄이는 지원 정책이 추진되고 있습니다. 공적 지원이 늘어나도 비급여·간병비는 여전히 본인 부담이니, 지원 범위와 함께 보유 보험의 보장 틈새를 안내해 보세요."
 
     if category == "시즌·이슈":
         templates = [
-            f"계절성 질환 및 안전사고 우려{fact_str}가 높아지고 있습니다. 갑작스러운 치료비나 입원비 부담에 대비해 보유 중인 보장 틈새를 사전에 안내해 보세요.",
-            f"최근 계절적 위험 요인{fact_str}에 따른 응급실 이용 및 입원 환자가 증가하고 있습니다. 고객님의 응급실 내원비 및 수술비 보장을 사전 점검해 드리는 것이 유리합니다.",
-            f"{lead_fact or '계절성 위험 이슈'} 발생 가능성에 대비해, 기존 건강보험의 입원일당과 치료비 한도가 충분한지 미리 확인해 보시길 권장합니다.",
-            f"계절성 질환 및 사고 위험{fact_str}에 대비하여 고객님의 필수 진단비와 치료비 보장 공백을 사전에 점검해 드릴 것을 추천합니다."
+            "계절성 질환과 안전사고가 늘어나는 시기입니다. 갑작스러운 입원·수술비 부담에 대비해 보유 중인 보장 틈새를 미리 안내해 보세요.",
+            "응급실 내원과 입원 환자가 늘어나는 계절입니다. 고객님의 응급실 내원비·입원일당·수술비 보장을 사전에 점검해 드리세요.",
+            f"{topic or '계절성 질환'} 관련 위험이 커지는 시기입니다. 입원일당과 치료비 한도가 충분한지 미리 확인해 보시길 권장합니다.",
+            "계절성 질환·사고 위험에 대비해 고객님의 필수 진단비와 치료비 보장 공백을 사전에 점검해 드리세요."
         ]
-        return templates[pattern_idx]
+        return _pick(templates) + money_note
 
     elif category == "질병·치료비 리얼리티":
         templates = [
-            f"최근 {lead_fact or '고액 비급여 치료비'} 관련 수술 및 진료 부담이 커지고 있습니다. 기존 보장에서 해당 항목이 충분히 커버되는지 사전 점검이 필요한 시점입니다.",
-            f"{lead_fact or '신의료기술 및 신약 치료'} 적용에 따른 진료비 부담을 대비해, 고객님의 비급여 및 통원비 보장 한도를 사전에 점검해 보세요.",
-            f"고액 치료비 발생 가능성이 높은 이슈{fact_str}와 관련하여, 부족한 암 진단비와 간병 틈새 보장을 사전에 안심 설계해 드리는 것을 권유합니다.",
-            f"치료 환경 변화{fact_str}로 본인부담액이 커짐에 따라, 보유 중인 건강보험의 보장 실효성과 한도를 사전에 체크해 보시길 권장합니다."
+            f"{med_topic or '고가 신약·신의료기술'} 관련 소식입니다. 치료가 길어질수록 비급여 약제비와 치료비 부담이 커지니, 기존 보장으로 충분히 커버되는지 점검해 드리세요.",
+            f"{med_topic or '중증질환'} 치료 환경이 빠르게 바뀌고 있습니다. 표적항암·신약 치료비와 비급여 통원비 보장 한도가 지금 기준에 맞는지 확인해 보세요.",
+            f"{med_topic or '중증질환'} 소식처럼 고액 치료비가 드는 사례가 늘고 있습니다. 진단비만으로는 부족할 수 있으니 치료비·간병비까지 이어지는 보장 공백을 미리 설계해 드리세요.",
+            f"{med_topic or '중증질환'} 관련 치료비 부담이 커지고 있습니다. 보유 중인 건강보험이 실제 치료비를 얼마나 돌려주는지 보장 실효성을 점검해 드리세요."
         ]
-        return templates[pattern_idx]
+        return _pick(templates) + money_note
 
     elif category == "제도·정책 이슈":
+        # 보험금 심사·보상 기사와 건강보험 급여 기사는 화법이 달라야 함
+        # (기존에는 "신약 건보 적용까지 2년" 기사에도 "보험금 청구·심사 기준" 문장이 붙었음)
+        if any(k in text for k in ["금감원", "심사", "보상", "보험금", "청구", "의료자문", "고지의무"]):
+            templates = [
+                "금융당국이 보험 심사·보상 기준을 손보고 있습니다. 변경 전후 보장 조건을 비교해 기존 가입 조건의 이점을 안내해 보세요.",
+                "보험금 청구·심사 기준이 달라지고 있습니다. 가입 고객님의 기존 실손·보장이 그대로 유지되는지 사전에 확인해 드리세요.",
+                "보험금 심사가 깐깐해질수록 약관과 보장 범위를 정확히 아는 설계사가 힘이 됩니다. 고객님의 청구 가능 항목을 미리 정리해 드리세요.",
+                "보상 기준 변화는 고객이 먼저 묻기 전에 알려드릴 때 신뢰가 쌓입니다. 달라진 기준과 기존 보장의 차이를 안내해 보세요."
+            ]
+        else:
+            templates = [
+                f"{topic or '건강보험'} 관련 제도 변경 소식입니다. 기존 실손·수술비 보장이 바뀐 기준에서도 그대로 유효한지 점검해 드리세요.",
+                f"{topic or '건강보험'} 관련 급여 기준이 바뀌고 있습니다. 급여 적용 전까지는 비급여 부담이 크니, 보유 보장의 치료비 한도를 점검해 드리세요."
+            ]
+        return _pick(templates) + money_note
+
+    elif category == "간병·돌봄 대란":
+        # (기존에는 간병 분기가 없어 간병 기사가 맨 아래 일반 문구로 빠졌음)
         templates = [
-            f"최근 {lead_fact or '보장 가이드라인'} 관련 급여 기준 및 정책 개정 이슈가 주목받고 있습니다. 기존 실손 및 수술비가 새 제도에서도 유지되는지 점검을 권유합니다.",
-            f"{lead_fact or '금융당국 정책'} 변경에 따라 기존 가입 조건의 차별점과 변경 후 보장 조건을 비교 확인해 보시는 것이 유리합니다.",
-            f"건강보험 및 제도 개편 이슈{fact_str}가 본격화되고 있습니다. 보유 중인 보장 자산의 틈새 항목을 사전에 점검해 드리길 바랍니다.",
-            f"보장 가이드라인{fact_str}이 새로 적용됨에 따라, 가입 고객님의 기존 실손 및 보장 한도 유지 여부를 사전 체크해 드리는 것을 추천합니다."
+            "간병비 부담이 가계를 위협하는 수준으로 커지고 있습니다. 간병인 사용일당·간병비 보장이 준비돼 있는지 점검해 드리세요.",
+            "요양·간병이 필요한 순간은 예고 없이 찾아옵니다. 치매·장기요양 진단비와 간병인 지원 보장을 미리 설계해 드리세요.",
+            "간병 문제는 곧 가족 전체의 경제 문제입니다. 간병인 지원·간병비 보장에 공백이 없는지 함께 확인해 보세요.",
+            "간병 비용 상승은 은퇴 자산을 빠르게 잠식합니다. 노후 준비와 함께 간병 보장을 점검하시길 권유합니다."
         ]
-        return templates[pattern_idx]
+        return _pick(templates) + money_note
 
     elif category == "상품·시장 동향":
+        # 기사에 실제로 절판/한도 축소/보험료 인상 신호가 있을 때만 그 화법을 쓴다
+        # (기존에는 무관한 기사에도 "보장 한도 축소 및 절판 전…" 문구가 붙었음)
+        if any(k in text for k in ["절판", "한도 축소", "한도축소", "판매 중단"]):
+            return "보장 한도 축소·절판 소식입니다. 변경 전 현재 가입 조건의 이점을 고객님께 빠르게 안내해 보세요." + money_note
+        if any(k in text for k in ["보험료 인상", "인상 예고", "인상률"]):
+            return "보험료 인상 흐름이 이어지고 있습니다. 인상 전 현재 조건으로 가입·리모델링하는 이점을 안내해 보세요." + money_note
+        if any(k in text for k in ["청구", "보험금", "환급"]):
+            return "보험금 청구 관련 소식입니다. 고객님이 놓친 청구가 없는지 함께 확인해 드리면 신뢰를 쌓는 좋은 계기가 됩니다." + money_note
+        if any(k in text for k in ["수술", "치료비", "진료비", "비급여"]):
+            return "수술·치료비 부담을 다룬 소식입니다. 수술비·비급여 치료비 특약이 고객님 보장에 들어 있는지, 한도는 충분한지 점검해 보세요." + money_note
         templates = [
-            f"최근 {lead_fact or '주요 특약'} 조건의 보장 한도 축소 및 절판 전, 타사 비교 우위와 현재 가입 조건의 이점을 빠르게 점검해 보시길 바랍니다.",
-            f"시장 동향 변화{fact_str}에 따라 인수 조건 및 한도 변경이 우려됩니다. 현재 가입 중인 특약의 비교 우위를 사전에 점검해 보시는 것이 좋습니다.",
-            f"{lead_fact or '타사 상품 동향'} 개편 전 기존 가입 조건의 이점을 고객님께 미리 안내해 드리는 것이 세일즈에 유리합니다.",
-            f"주요 보장 한도 조정 이슈{fact_str}와 관련하여 타사 대비 삼성화재의 차별점과 보장 우위를 사전에 점검해 보세요."
+            "보험 시장 흐름이 바뀌고 있습니다. 타사 상품과 비교해 삼성화재 보장의 강점을 정리해 두시면 상담에 도움이 됩니다.",
+            f"{topic or '주요 특약'} 관련 상품 경쟁이 치열해지고 있습니다. 현재 가입 중인 특약의 비교 우위를 사전에 점검해 보세요."
         ]
-        return templates[pattern_idx]
+        return _pick(templates) + money_note
 
     else:
-        return "최근 업데이트된 보장 동향을 바탕으로 고객님의 보장 자산 현황을 점검하고 필요한 준비를 상담해 보세요."
+        return "최근 업데이트된 보장 동향을 바탕으로 고객님의 보장 자산 현황을 점검하고 필요한 준비를 상담해 보세요." + money_note
 
 
 
@@ -961,22 +1010,13 @@ def analyze_youtube_video(title, description, channel=""):
             from google import genai
             from google.genai import types
 
-            client = genai.Client(api_key=api_key)
-
             prompt = (
                 f"유튜브 영상 제목: {title}\n"
                 f"설명: {description[:500]}\n"
                 "요약과 해시태그를 JSON으로 반환하세요."
             )
 
-            response = client.models.generate_content(
-                model='gemini-3.5-flash',
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    temperature=0.2,
-                ),
-            )
+            response = gemini_generate(api_key, prompt, temperature=0.2)
 
             data = json.loads(response.text)
             summary_text = data.get("summary", "").strip()
@@ -1007,7 +1047,12 @@ def analyze_youtube_video(title, description, channel=""):
     fact_source_text = re.sub(r'01[016789][-.\s]?\d{3,4}[-.\s]?\d{4}', '', fact_source_text)
     fact_source_text = re.sub(r'\d{2,4}[-.]\d{3,4}[-.]\d{4}', '', fact_source_text)
     fact_source_text = re.sub(r'\d{1,2}:\d{2}(:\d{2})?', '', fact_source_text)
-    numbers = re.findall(r'\d+(?:만|억|원|%|세대|년|회)?', fact_source_text)
+    # 단위가 붙은 수치만 추출 (단위 선택형이면 "7가지"의 7, "26년9월"의 9 같은 무의미한 숫자가 잡혔음)
+    # 소수점/천단위 포함, "6천만원"이 "6"으로 잘리지 않도록 천만/백만 단위 우선
+    numbers = []
+    for n in re.findall(r'\d+(?:[.,]\d+)*\s?(?:천만\s?원|백만\s?원|만\s?원|억\s?원|천만|백만|만|억|원|%|배)', fact_source_text):
+        if n not in numbers:
+            numbers.append(n)
     keywords = [w for w in re.findall(r'[가-힣a-zA-Z0-9]+', title + " " + description) 
                 if len(w) >= 2 and w not in STOP_WORDS and not w.isdigit()]
     
@@ -1037,10 +1082,23 @@ def analyze_youtube_video(title, description, channel=""):
             selected_tags.append(dt)
 
     # 스마트 팩트 문장 조합 (템플릿 문구 전면 제거 및 제목/본문 팩트 결합)
-    fact_details = f"({', '.join(numbers[:3])})" if numbers else ""
-    desc_fact = description[:100].strip() if description and len(description) > 20 else "고객 상담 시 주요 보장 항목의 수량 및 한도 조건을 체크하기에 유용한 현장 정보입니다."
+    # 설명란에서 링크·구매처·구독 유도 등 홍보 문장을 걷어내고 내용 문장만 최대 110자까지 사용
+    # (기존에는 설명 앞 100자를 그대로 붙여 "채널 : https://... 구매 링크 교보문고:" 같은 문구가 카드에 노출됐음)
+    junk_marks = ["http", "www.", "@", "#", "채널", "구독", "좋아요", "알림", "구매", "링크", "문의", "상담",
+                  "카톡", "카카오", "오픈채팅", "인스타", "블로그", "협찬", "광고", "교보문고", "예스24", "yes24", "쿠팡"]
+    desc_sents = [s.strip() for s in re.split(r'(?<=[.?!])\s+|\n+', description or "")
+                  if len(re.findall(r'[가-힣]', s)) >= 8 and not any(j in s.lower() for j in junk_marks)]
+    desc_fact = ""
+    for s in desc_sents:
+        if len(desc_fact) + len(s) > 110:
+            break
+        desc_fact = (desc_fact + " " + s).strip()
+    if not desc_fact and desc_sents:
+        desc_fact = desc_sents[0][:107].rsplit(' ', 1)[0] + "…"
+    num_note = f" 영상 속 핵심 수치는 {', '.join(numbers[:2])}입니다." if numbers else ""
     
-    smart_summary = f"'{clean_title}' 영상은 {channel if channel else '전문가'} 채널에서 {selected_tags[0].replace('#','')} 및 보장 틈새 점검의 팩트 포인트{fact_details}를 조명합니다. {desc_fact}"
+    smart_summary = (f"{channel or '보험 전문'} 채널의 '{clean_title}' 영상입니다.{num_note} "
+                     + (desc_fact or "고객 상담 전 영상에서 다룬 보장 항목을 함께 점검해 보세요."))
 
     return {
         "summary": smart_summary,
@@ -1355,7 +1413,8 @@ def fetch_category_news(cat_id, info, limit=8):
             # 기사 본문 크롤링 - Google RSS 리다이렉트 해원 후 og:description / 네이버 모바일 블로그 파서 구동
             if cat_id not in ["assembly_petition", "youtube"]:
                 _pre = evaluate_article_cot(clean_title, "", hook=False)
-                if not _pre["adopted"] and len(_pre["checklist_hits"]) == 0:
+                # 제목에 보험/치료비 맥락 단어가 있으면 본문을 읽고 판단 (제목만으로 버리던 기사가 하루 57~95건)
+                if not _pre["adopted"] and len(_pre["checklist_hits"]) == 0 and not _pre["has_context"]:
                     print(f"      [사전탈락] 제목 단계 영업관련성 0 → 크롤링 생략: {clean_title[:30]}")
                     continue
 
@@ -1524,7 +1583,9 @@ def calculate_sales_relevance_score(item):
     # 5. 영업 임팩트 키워드 가점 (+2점)
     impact_keywords = [
         "급증", "부담 증가", "제도 변경", "급여 기준", "환자 수", "폭염", "온열질환",
-        "사망", "상속세", "증여세", "절세", "수술비", "비급여", "한도 축소", "절판"
+        "사망", "상속세", "증여세", "절세", "수술비", "비급여", "한도 축소", "절판",
+        # CoT를 통과한 보험금·간병·수술 기사가 점수 0으로 최종 컷(sales_score > 0)에서 떨어지던 문제 보완
+        "수술", "간병", "실손", "보험금", "고지의무", "해지", "의료자문", "보상기준", "진료비", "신약", "암", "약가"
     ]
     found_impact = [ik for ik in impact_keywords if ik in text]
     if found_impact:
@@ -2178,7 +2239,9 @@ def build_html_card_news(data, today_str, mail_text, notion_url=None):
             card_elements.append(card_html)
             
     cards_grid_html = "\n".join(card_elements) if card_elements else "<div class='no-data'>오늘의 브리핑 데이터가 비어 있습니다.</div>"
-    escaped_mail_text = mail_text.replace('\\', '\\\\').replace('\n', '\\n').replace('\'', '\\\'').replace('\r', '')
+    # textarea 안에 들어가므로 JS 문자열 이스케이프(\n → "\\n")가 아니라 HTML 이스케이프만 한다
+    # (기존 방식은 복사된 메일에 줄바꿈 대신 "\n" 글자가 그대로 찍혀 한 줄로 뭉쳤음)
+    escaped_mail_text = _html_escape(mail_text.replace('\r', ''), quote=False)
 
     if notion_url:
         notion_badge_html = f'<a href="{notion_url}" target="_blank" class="btn btn-primary" style="text-decoration: none;">모바일 노션뷰</a>'
