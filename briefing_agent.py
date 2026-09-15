@@ -3143,7 +3143,9 @@ def push_to_github():
     import subprocess
     # deploy/ 저장소 안에서 직접 스크립트를 실행하는 경우(cwd 자체가 이미 deploy repo)와
     # 상위 폴더에서 실행하는 경우(deploy/ 하위 폴더로 접근) 모두 지원
-    deploy_dir = "." if os.path.isdir(".git") else "deploy"
+    # 바깥 폴더(deploy/.git 보유)에서 실행하면 deploy/, deploy 저장소 내부에서 실행하면 현재 폴더
+    # (".git 존재 여부"만 보면 바깥 폴더도 git 저장소라 잘못 판별됨)
+    deploy_dir = "deploy" if os.path.isdir(os.path.join("deploy", ".git")) else "."
     if not os.path.exists(os.path.join(deploy_dir, ".git")):
         print("[정보] deploy 폴더 내에 Git 저장소가 초기화되지 않았습니다. 업로드를 생략합니다.")
         return
@@ -3318,7 +3320,7 @@ def main():
     
     # 넷리파이(Netlify) 업로드용 deploy 폴더 자동 구성
     # (CI 환경이거나, deploy repo 내부에서 직접 실행 중이면 현재 폴더를 그대로 사용)
-    deploy_dir = "." if (CI_MODE or os.path.isdir(".git")) else "deploy"
+    deploy_dir = "deploy" if (not CI_MODE and os.path.isdir(os.path.join("deploy", ".git"))) else "."
     if not os.path.exists(deploy_dir):
         os.makedirs(deploy_dir)
     deploy_html_path = os.path.join(deploy_dir, "index.html")
