@@ -547,13 +547,18 @@ def evaluate_article_cot(title, body="", hook=True):
     )
 
     # STEP 5. 타사 상품 홍보 및 상품 소개 기사 판별 (is_promo)
-    other_insurers = ["한화생명", "교보생명", "동양생명", "DB손보", "DB손해보험", "현대해상", "KB손보", "KB손해보험", "메리츠", "메리츠화재", "흥국화재", "롯데손보", "신한라이프", "라이나생명", "AIA생명", "하나손보"]
+    other_insurers = ["한화생명", "교보생명", "동양생명", "DB손보", "DB손해보험", "현대해상", "KB손보", "KB손해보험", "메리츠", "메리츠화재", "흥국화재", "롯데손보", "신한라이프", "라이나생명", "AIA생명", "하나손보",
+                     "삼성생명", "농협", "수협", "신협", "새마을금고", "우체국", "카카오페이", "토스", "캐롯", "MG손보"]
+    # 이름 목록에 없는 회사(예: "수협 Sh디지털안심공제")도 잡도록 회사 이름 꼴(○○생명/손보/화재/공제/은행/증권/카드 등)로도 판별
+    company_re = re.compile(r"[가-힣A-Za-z]{2,}(생명|손보|손해보험|화재|라이프|공제|은행|증권|카드|캐피탈|페이|협동조합|조합)")
     # ★ promo_keywords: 타사 보험사명 + 이 중 하나라도 있으면 is_promo=True 후보
     promo_keywords = [
         "출시", "개정 출시", "론칭", "내놨", "내놓", "출시 예정",
         "선뵈", "신상품", "보장 강화", "배타적사용권",
         "가입자 끌어", "3단 보장", "3단보장", "특약 신설",
-        "혜택 강화", "상품 선보여", "상품 개편", "상품 리뉴얼"
+        "혜택 강화", "상품 선보여", "상품 개편", "상품 리뉴얼",
+        # 회사가 자사 상품을 새로 내놓거나 손보는 표현 (예: "흥국화재, 주행거리 할인 특약 개편…최대 48% 상향")
+        "개편", "신설", "상향", "선보", "신규 가입", "가입 이벤트", "할인 특약", "리뉴얼", "업그레이드"
     ]
     # ★ explicit_product_kw: 타사 사명 없어도 단독으로 is_promo=True
     explicit_product_kw_list = [
@@ -562,7 +567,7 @@ def evaluate_article_cot(title, body="", hook=True):
 
     is_promo = False
     if adopted:
-        has_other_insurer = any(ins in text for ins in other_insurers)
+        has_other_insurer = any(ins in text for ins in other_insurers) or bool(company_re.search(text))
         has_promo_kw = any(pk in text for pk in promo_keywords)
         explicit_product_kw = any(ep in text for ep in explicit_product_kw_list)
 

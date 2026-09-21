@@ -197,7 +197,27 @@ if b.fss_overlap("실손보험 청구 급증, 금감원 대책"):
     fails.append("금감원 중복: 고유어 1개짜리 공식 자료로 뉴스를 제외함")
 b.FSS_TITLES.clear()
 
+# 9. 타사·타업권 상품 홍보 기사는 홍보로 판별(=최종 제외), 정책·삼성화재·일반 기사는 오탐 없음
+def promo(t):
+    with contextlib.redirect_stdout(io.StringIO()):
+        return b.evaluate_article_cot(t, "", hook=False)["is_promo"]
+
+for t in ["“보험료 0원으로 내 자산 지킨다”…수협, Sh디지털안심공제 출시",
+          "흥국화재, 주행거리 할인 특약 개편···최대 48% 상향",
+          "NH농협손보, 암 진단비 3천만원 신규 암보험 출시…가입 이벤트",
+          "OO저축은행, 실손 연계 신상품 출시"]:
+    if not promo(t):
+        fails.append(f"홍보: 타사 상품 홍보인데 통과 {t}")
+for t in ["삼성화재, 신규 암보험 출시",                                  # 자사 상품은 홍보 아님
+          "실손보험 4세대 개편…금감원 소비자 유의사항 안내",              # 회사명 없는 제도 기사
+          "건강보험 산정특례 개편 논의"]:
+    if promo(t):
+        fails.append(f"홍보: 홍보가 아닌 기사를 홍보로 오판 {t}")
+for t in MUST_ADOPT:                                                     # 채택돼야 하는 기사가 홍보로 뒤바뀌지 않았는지
+    if promo(t):
+        fails.append(f"홍보: 기존 채택 기사가 홍보로 오판됨 {t}")
+
 if fails:
     print("\n".join(["[FAIL] " + f for f in fails]))
     sys.exit(1)
-print(f"[OK] 채택 {len(MUST_ADOPT)}건 · 차단 {len(MUST_REJECT)}건 · 화법/유튜브/Gemini 재시도/금감원/공식자료 중복/빈출 키워드 검증 통과")
+print(f"[OK] 채택 {len(MUST_ADOPT)}건 · 차단 {len(MUST_REJECT)}건 · 화법/유튜브/Gemini 재시도/금감원/공식자료 중복/타사 홍보/빈출 키워드 검증 통과")
