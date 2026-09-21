@@ -569,7 +569,8 @@ def evaluate_article_cot(title, body="", hook=True):
     if adopted:
         has_other_insurer = any(ins in text for ins in other_insurers) or bool(company_re.search(text))
         has_promo_kw = any(pk in text for pk in promo_keywords)
-        explicit_product_kw = any(ep in text for ep in explicit_product_kw_list)
+        # 제목 앞 [이달의 신상품] 같은 대괄호 태그는 clean_title 단계에서 지워지므로 원본 제목도 함께 확인
+        explicit_product_kw = any(ep in text for ep in explicit_product_kw_list) or "신상품" in title
 
         if (has_other_insurer and has_promo_kw) or explicit_product_kw:
             if "삼성화재" not in text:
