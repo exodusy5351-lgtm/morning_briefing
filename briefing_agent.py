@@ -1816,10 +1816,41 @@ def fss_hook(title, board):
     return "금감원의 보험 관련 공식 발표입니다. 고객 상담에 영향이 있는지 확인하고, 바뀐 점과 유의할 점을 미리 안내해 주세요."
 
 
+# 금감원 공식 자료와 같은 사건을 다룬 뉴스 기사 판별용 (이미 게재한 공식 자료도 포함해 다음 날 재등장 방지)
+FSS_TITLES = []
+FSS_GENERIC = {"보험", "가입", "소비자", "유의사항", "금감원", "금융감독원", "안내", "발표", "개최", "강화", "점검",
+               "경고", "주의", "확대", "개선", "추진", "실시", "보험사", "금융", "관련", "설명", "사례", "조치", "요령",
+               "예방", "피해", "보험금", "보험료"}
+_PARTICLES = ("에서", "으로", "에게", "까지", "부터", "에도", "에는")
+
+
+def _fss_tokens(title):
+    """공식 자료 제목의 고유 단어 (일반어 제외, 조사 제거)"""
+    toks = []
+    for w in re.findall(r'[가-힣A-Za-z0-9]{2,}', title):
+        for p in _PARTICLES:
+            if w.endswith(p) and len(w) - len(p) >= 2:
+                w = w[:-len(p)]
+                break
+        if w not in FSS_GENERIC and w not in toks:
+            toks.append(w)
+    return toks
+
+
+def fss_overlap(title):
+    """뉴스 제목이 게재 대상 금감원 공식 자료와 같은 사건이면 True (고유 단어 2개 이상 일치)"""
+    for ft in FSS_TITLES:
+        toks = _fss_tokens(ft)
+        if len(toks) >= 2 and sum(1 for t in toks if t in title) >= 2:
+            return True
+    return False
+
+
 def fetch_fss_official(recent_urls=(), limit=3):
     """금감원 보도자료·소비자경보 게시판에서 최근 보험 관련 공식 발표를 직접 수집 (최신순 최대 limit건)"""
     today = datetime.now().date()
     info = CATEGORIES["fss_official"]
+    FSS_TITLES.clear()
     found = []
     for board, bbs_id, menu_no in FSS_BOARDS:
         try:
@@ -1832,7 +1863,10 @@ def fetch_fss_official(recent_urls=(), limit=3):
         for ntt, title, dept, date_str in parse_fss_board(page):
             link = f"https://www.fss.or.kr/fss/bbs/{bbs_id}/view.do?nttId={ntt}&menuNo={menu_no}"
             dt = datetime.strptime(date_str, "%Y-%m-%d")
-            if (today - dt.date()).days > FSS_MAX_AGE_DAYS or link in recent_urls or not fss_relevant(title):
+            if (today - dt.date()).days > FSS_MAX_AGE_DAYS or not fss_relevant(title):
+                continue
+            FSS_TITLES.append(title)  # 이미 게재한 공식 자료도 뉴스 중복 판별 기준에 포함
+            if link in recent_urls:
                 continue
             found.append({
                 "title": title, "link": link, "source": f"금융감독원 {board}",
@@ -2154,6 +2188,11 @@ def compile_briefing_data():
         # 영업 유용성 스코어(sales_score) 내림차순 정렬 (동점 시 최신순)
         cat_items.sort(key=lambda x: (x.get("sales_score", 0), x.get("datetime") or datetime.min), reverse=True)
 
+        # 금감원 공식 자료와 같은 사건을 다룬 언론 기사는 공식 자료가 대신하므로 제외 (쿼터는 다음 기사로 채움)
+        dup_fss = [it for it in cat_items if fss_overlap(it["title"])]
+        for it in dup_fss:
+            print(f"      [금감원 공식 자료와 중복] 뉴스 기사 제외: {it['title']}")
+        cat_items = [it for it in cat_items if it not in dup_fss]
         pure_facts = [it for it in cat_items if not it.get("is_promo") and it.get("sales_score", 0) > 0]
         promo_items = [it for it in cat_items if it.get("is_promo")]
 

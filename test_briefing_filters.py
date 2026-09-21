@@ -177,7 +177,27 @@ if top[0] != ("간병", 1) or top[1][0] != "급여 적용":
 if b.build_trend_html([]) != "" or "<b>1</b>암<em>50</em>" not in b.build_trend_html([("암", 50)]):
     fails.append("키워드: 티커 HTML 오류")
 
+# 8. 금감원 공식 자료와 같은 사건의 뉴스 기사 판별
+b.FSS_TITLES[:] = ["무료 강연, 박람회에서 보험 가입 시 소비자 유의사항"]
+SAME = ["무료 강연 뒤 보험 청약…금감원, 암행점검 강화",
+        "“케이크 무료 강연이라더니 종신보험 권유”…금감원, 불건전 보험영업 경고",
+        "박람회서 보험 가입했다면…금감원 “무료 강연 영업 주의”"]
+DIFFERENT = ["실손보험 청구 간소화 시행…금감원 소비자 유의사항 안내",   # 일반어만 겹침
+             "무료 진료 봉사 나선 병원",                                  # 고유어 1개만 겹침
+             "박람회 참가 보험사 늘었다",                                 # 고유어 1개만 겹침
+             "폐암 신약 급여 적용 논의"]
+for t in SAME:
+    if not b.fss_overlap(t):
+        fails.append(f"금감원 중복: 같은 사건인데 통과 {t}")
+for t in DIFFERENT:
+    if b.fss_overlap(t):
+        fails.append(f"금감원 중복: 다른 기사가 제외됨 {t}")
+b.FSS_TITLES[:] = ["금감원, 실손보험 유의사항 안내"]  # 고유어가 1개뿐이면 오탐 위험 -> 판별하지 않음
+if b.fss_overlap("실손보험 청구 급증, 금감원 대책"):
+    fails.append("금감원 중복: 고유어 1개짜리 공식 자료로 뉴스를 제외함")
+b.FSS_TITLES.clear()
+
 if fails:
     print("\n".join(["[FAIL] " + f for f in fails]))
     sys.exit(1)
-print(f"[OK] 채택 {len(MUST_ADOPT)}건 · 차단 {len(MUST_REJECT)}건 · 화법/유튜브/Gemini 재시도/금감원/빈출 키워드 검증 통과")
+print(f"[OK] 채택 {len(MUST_ADOPT)}건 · 차단 {len(MUST_REJECT)}건 · 화법/유튜브/Gemini 재시도/금감원/공식자료 중복/빈출 키워드 검증 통과")
