@@ -219,7 +219,23 @@ for t in MUST_ADOPT:                                                     # 채�
     if promo(t):
         fails.append(f"홍보: 기존 채택 기사가 홍보로 오판됨 {t}")
 
+# 10. 지자체(군·시·구·도) 예산·시설·복지 기사는 CoT 단계에서 차단 (수집 단계와 같은 목록을 공유)
+for t in ["[단독]단양군립노인요양병원, 새 수탁업체 한 달 만에 간병비 22% 인상…군민 부담 키우고 군비로 메우나",
+          "순천시, 치매 어르신 간병비 지원 확대",
+          "경기도, 요양병원 간병비 지원 시범사업 확대…도민 부담 줄인다",
+          "제주도 도민 대상 암 치료비 지원 확대",
+          "충남도립 요양병원 간병비 인상…도비 투입 논란"]:
+    if adopted(t):
+        fails.append(f"지자체: 지자체 기사가 통과 {t}")
+    # "○○시/군/구" 이름만 있는 기사는 CoT 정규식이 막고, 수집 단계 함수는 키워드·도 이름을 본다 (역할 분담)
+    if not t.startswith("순천시") and not b.is_local_gov_news(t):
+        fails.append(f"지자체: 수집 단계 판별이 놓침 {t}")
+for t in ["실손보험 4세대 전환 앞두고 경기도 소재 병원 비급여 실태 점검",   # 도 이름만 있고 지원 표현 없음
+          "간병비 부담에 가입 늘어…삼성화재 간병인 특약 출시"]:
+    if b.is_local_gov_news(t):
+        fails.append(f"지자체: 일반 기사를 지자체 기사로 오판 {t}")
+
 if fails:
     print("\n".join(["[FAIL] " + f for f in fails]))
     sys.exit(1)
-print(f"[OK] 채택 {len(MUST_ADOPT)}건 · 차단 {len(MUST_REJECT)}건 · 화법/유튜브/Gemini 재시도/금감원/공식자료 중복/타사 홍보/빈출 키워드 검증 통과")
+print(f"[OK] 채택 {len(MUST_ADOPT)}건 · 차단 {len(MUST_REJECT)}건 · 화법/유튜브/Gemini 재시도/금감원/공식자료 중복/타사 홍보/지자체/빈출 키워드 검증 통과")

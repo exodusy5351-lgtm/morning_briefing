@@ -202,6 +202,19 @@ GOOGLE_SPREADSHEET_ID = ""
 # =========================================================================
 # 뉴스 카테고리 구성 (8대 실전 테마 + 2대 신규 테마 = 총 10대 실전 테마)
 # =========================================================================
+# 지자체(군·시·구·도) 예산·시설·복지 기사 판별 기준 — 수집 단계와 CoT 판별 단계가 같은 목록을 쓰도록 한 곳에 둔다
+# (예전에는 두 곳에 복사돼 한쪽만 고치면 다른 쪽이 어긋나 같은 유형이 반복해서 새어 나왔음)
+LOCAL_GOV_KEYWORDS = ["군립", "시립", "구립", "도립", "군비", "시비", "도비", "군민", "구민", "도민", "군청", "시청", "구청", "도청"]
+PROVINCE_RE = re.compile(r"(경기도|강원도|강원특별자치도|충청북도|충청남도|전라북도|전북특별자치도|전라남도|경상북도|경상남도|제주도|제주특별자치도|충북도|충남도|전북도|전남도|경북도|경남도)")
+LOCAL_GOV_SUPPORT = ["지원", "시범사업", "조례", "예산", "바우처"]
+
+
+def is_local_gov_news(title):
+    """제목이 지자체 예산·시설·복지 사업 기사면 True (민간 보험 영업과 무관)"""
+    t = title.lower()
+    return any(k in t for k in LOCAL_GOV_KEYWORDS) or bool(PROVINCE_RE.search(t) and any(k in t for k in LOCAL_GOV_SUPPORT))
+
+
 RSS_BASE_URL = "https://news.google.com/rss/search"
 
 CATEGORIES = {
@@ -529,7 +542,7 @@ def evaluate_article_cot(title, body="", hook=True):
     if any(k in text for k in ["공모전", "시상식", "장관상", "원장상", "수상작", "상 수상"]):
         exclusion = True
     # 기초자치단체(시/군/구) 단위 복지 지원사업 및 군립/시립/구립 요양원·시설 뉴스 - 지자체 예산/공공 정책이지 민간 보험 세일즈와 무관
-    if (re.search(r'[가-힣]{2,}(시|군|구)', clean_title) or any(k in text for k in ["군립", "시립", "구립", "도립", "군비", "시비", "군민", "구민"])) and any(sk in text for sk in ["지원", "지원금", "지원사업", "요양병원", "요양원", "수탁", "인상", "위탁", "부담"]) and not any(
+    if (re.search(r'[가-힣]{2,}(시|군|구)', clean_title) or any(k in text for k in LOCAL_GOV_KEYWORDS) or PROVINCE_RE.search(clean_title)) and any(sk in text for sk in ["지원", "지원금", "지원사업", "요양병원", "요양원", "수탁", "인상", "위탁", "부담"]) and not any(
         pk in text for pk in ["가입", "특약", "약관", "실손", "보험료", "보험금", "사보험", "삼성화재"]
     ):
         exclusion = True
@@ -1377,8 +1390,7 @@ def fetch_category_news(cat_id, info, limit=8):
                 continue
 
             # [최상단 강제 필터링] 군립/시립/구립/도립 시설 및 지자체 예산(군비/시비/도비) 뉴스 (민간 보험 세일즈 무관) 차단
-            local_gov_keywords = ["군립", "시립", "구립", "도립", "군비", "시비", "도비", "군민", "구민", "군청", "시청", "구청"]
-            if any(lgk in title_lower for lgk in local_gov_keywords):
+            if is_local_gov_news(title_lower):
                 if not any(ik in title_lower for ik in ["실손", "수술비", "암보험", "특약", "약관", "사보험", "삼성화재"]):
                     print(f"      [최상단필터링] 지자체 군립/시립 시설 및 예산 기사 차단: {clean_title}")
                     continue
