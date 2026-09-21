@@ -10,7 +10,7 @@ import json
 import difflib
 import hashlib
 from html.parser import HTMLParser
-from html import escape as _html_escape
+from html import escape as _html_escape, unescape as _html_unescape
 import time
 import base64
 import concurrent.futures
@@ -205,6 +205,12 @@ GOOGLE_SPREADSHEET_ID = ""
 RSS_BASE_URL = "https://news.google.com/rss/search"
 
 CATEGORIES = {
+    "fss_official": {
+        "label": "금감원 공식",
+        "query": "",  # 금감원 보도자료/소비자경보 게시판 직접 스크래핑으로 별도 진행
+        "badge_color": "#6366F1",  # Indigo (라이트/다크 모두 가독)
+        "badge_bg": "rgba(99, 102, 241, 0.12)"
+    },
     "silson": {
         "label": "제도·정책 이슈",
         "query": '("실손" OR "실손보험" OR "건강보험" OR "금감원" OR "도수치료") ("개정" OR "변경" OR "사각지대" OR "급여화" OR "자기부담") -MOU -협약 -인사 -동정 -주가 -코스피 -실적 -개원 -봉사 -지사 -지부 -지역본부 -출장소 -캠페인',
@@ -1773,6 +1779,73 @@ def fetch_youtube_trends(limit=10, recent_published_urls=None):
     return all_videos
 
 
+# =========================================================================
+# 금감원 공식 보도자료 / 소비자경보 직접 수집 (뉴스 검색에 잡히기 전에 가장 빠르고 공신력 높음)
+# =========================================================================
+FSS_BOARDS = [("보도자료", "B0000188", "200218"), ("소비자경보", "B0000175", "200204")]
+FSS_KEEP = ["보험", "실손", "간병", "비급여", "백내장", "도수치료", "치매", "요양", "손해사정"]
+# 보험 단어가 있어도 설계사 영업과 무관한 공지성 글(합격자 발표, 보험사 결산 등)은 제외
+FSS_DROP = ["합격", "채용", "임명", "인사발령", "나눔", "봉사", "후원", "협약", "MOU", "결산", "영업실적",
+            "경영실적", "지급여력", "건전성", "당기순이익", "계리사"]
+FSS_MAX_AGE_DAYS = 2  # 오늘 포함 3일치: 주말·연휴 직후 브리핑에도 직전 발표분이 남도록
+
+
+def parse_fss_board(page_html):
+    """금감원 게시판 목록 HTML -> [(글번호, 제목, 담당부서, 등록일)]"""
+    rows = re.findall(r'<td class="title"><a href="[^"]*nttId=(\d+)[^"]*">(.*?)</a></td>\s*<td>(.*?)</td>\s*<td>\s*(\d{4}-\d{2}-\d{2})\s*</td>', page_html, re.S)
+    # 목록 제목은 부제 앞에서 잘려 끝에 여는 괄호(「)만 남는 경우가 있어 제거
+    return [(n, re.sub(r'[「『]\s*$', '', _html_unescape(re.sub(r'<[^>]+>', '', t))).strip(), d.strip(), dt) for n, t, d, dt in rows]
+
+
+def fss_relevant(title):
+    return any(k in title for k in FSS_KEEP) and not any(k in title for k in FSS_DROP)
+
+
+def fss_hook(title, board):
+    """금감원 공식 자료용 현장 화법 (주제어별 고정 문장: 공식 발표라 Gemini 쿼터를 쓰지 않음)"""
+    if board == "소비자경보":
+        return "금감원이 소비자경보를 발령했습니다. 고객님께 같은 피해가 생기지 않도록 사례와 예방 요령을 먼저 안내해 주세요."
+    if any(k in title for k in ["영업", "설계사", "불완전판매", "승환", "유의사항", "민원"]):
+        return "금감원이 보험 가입·영업 시 유의사항을 안내했습니다. 상담·청약 절차에 문제가 없는지 스스로 점검하고, 고객님께도 확인 요령을 알려 드려 신뢰를 높이세요."
+    if "보험사기" in title:
+        return "보험사기 관련 공식 발표입니다. 무심코 하는 과장·허위 청구도 문제가 될 수 있음을 고객님께 미리 안내해 주세요."
+    if any(k in title for k in ["실손", "백내장", "도수치료", "비급여", "보험금", "지급", "심사", "보상"]):
+        return "보험금 지급·심사 기준과 관련된 금감원 공식 발표입니다. 고객님의 기존 실손·보장에 어떻게 적용되는지 점검해 안내해 보세요."
+    if any(k in title for k in ["간병", "치매", "요양"]):
+        return "간병·요양 관련 금감원 공식 발표입니다. 고객님의 간병인 지원·간병비 보장에 공백이 없는지 함께 확인해 보세요."
+    return "금감원의 보험 관련 공식 발표입니다. 고객 상담에 영향이 있는지 확인하고, 바뀐 점과 유의할 점을 미리 안내해 주세요."
+
+
+def fetch_fss_official(recent_urls=(), limit=3):
+    """금감원 보도자료·소비자경보 게시판에서 최근 보험 관련 공식 발표를 직접 수집 (최신순 최대 limit건)"""
+    today = datetime.now().date()
+    info = CATEGORIES["fss_official"]
+    found = []
+    for board, bbs_id, menu_no in FSS_BOARDS:
+        try:
+            req = urllib.request.Request(f"https://www.fss.or.kr/fss/bbs/{bbs_id}/list.do?menuNo={menu_no}", headers=HEADERS)
+            with urllib.request.urlopen(req, timeout=10) as r:
+                page = r.read().decode("utf-8", errors="replace")
+        except Exception as e:
+            print(f"[경고] 금감원 {board} 게시판 수집 실패: {e}")
+            continue
+        for ntt, title, dept, date_str in parse_fss_board(page):
+            link = f"https://www.fss.or.kr/fss/bbs/{bbs_id}/view.do?nttId={ntt}&menuNo={menu_no}"
+            dt = datetime.strptime(date_str, "%Y-%m-%d")
+            if (today - dt.date()).days > FSS_MAX_AGE_DAYS or link in recent_urls or not fss_relevant(title):
+                continue
+            found.append({
+                "title": title, "link": link, "source": f"금융감독원 {board}",
+                "pub_date_str": f"{date_str} · {dept}", "datetime": dt,
+                "category_id": "fss_official", "category_label": info["label"],
+                "badge_color": info["badge_color"], "badge_bg": info["badge_bg"],
+                "insight": fss_hook(title, board),
+            })
+    found.sort(key=lambda x: x["datetime"], reverse=True)
+    print(f"[정보] 금감원 공식 자료 {len(found[:limit])}건 수집")
+    return found[:limit]
+
+
 def fetch_assembly_petitions():
     # 국회청원 수집 함수
     print("[정보] '국회청원 (비급여/급여화)' 5만 명 달성 보장 패스트트랙 및 CoT 수집 시작...")
@@ -1982,7 +2055,7 @@ def compile_briefing_data():
     
     # 1. 뉴스 카테고리별 기사 수집 (한도 10개까지 넉넉히 수집)
     import concurrent.futures
-    _targets = [(cid, cinfo) for cid, cinfo in CATEGORIES.items() if cid != "youtube"]
+    _targets = [(cid, cinfo) for cid, cinfo in CATEGORIES.items() if cid not in ("youtube", "fss_official")]
     _results = {}
     print(f"[정보] 테마 {len(_targets)}개 병렬 수집 시작...")
     with concurrent.futures.ThreadPoolExecutor(max_workers=5) as _ex:
@@ -2063,6 +2136,7 @@ def compile_briefing_data():
     all_data["youtube"] = top_youtube  # 유튜브 전용 독립 보장 노출 (실전 영상 최대 3건)
     all_data["threads_trend"] = fetch_threads_hot_issues()  # 스레드 핫이슈 수집 데이터 바인딩
     all_data["assembly_petition"] = fetch_assembly_petitions()[:2]  # 국회청원(근거 자료 슬롯) 최대 2건 제한
+    all_data["fss_official"] = fetch_fss_official(recent_published_urls)  # 금감원 공식 자료 최대 3건 (1면 최우선)
 
     # 테마별 노출 쿼터: 핵심 메인(간병/치료비/제도-긴박성)은 3~4건, 서브 근거는 1~2건으로 차등 배분
     SLOT_QUOTAS = {
@@ -2074,7 +2148,7 @@ def compile_briefing_data():
     }
 
     for cat_id, cat_items in raw_cat_groups.items():
-        if cat_id in ["youtube", "threads_trend", "assembly_petition"]:
+        if cat_id in ["youtube", "threads_trend", "assembly_petition", "fss_official"]:
             continue
 
         # 영업 유용성 스코어(sales_score) 내림차순 정렬 (동점 시 최신순)
@@ -2093,6 +2167,76 @@ def compile_briefing_data():
         all_data[cat_id] = selected
 
     return all_data
+
+# =========================================================================
+# 이달의 빈출 키워드 랭킹 (Trend Radar): 날짜별 게재 기사 제목을 누적해 최근 30일 TOP 5 산출
+# =========================================================================
+KEYWORD_HISTORY_FILE = os.path.join("data", "keyword_history.json")  # {"YYYY-MM-DD": [기사 제목, ...]}
+KEYWORD_HISTORY_DAYS = 60
+# ponytail: 고정 사전 방식 — 새로 뜨는 질병·제도 용어는 여기에 한 줄 추가 (형태소 분석은 과잉)
+TREND_KEYWORDS = {
+    "실손보험": ["실손", "실비"], "비급여": ["비급여"], "간병": ["간병"], "신약": ["신약"],
+    "급여 적용": ["급여화", "급여 적용", "급여 등재", "급여등재", "건보 적용", "건강보험 적용"],
+    "암": ["항암", "폐암", "유방암", "대장암", "위암", "간암", "췌장암", "갑상선암", "전립선암", "혈액암",
+           "방광암", "림프종", "백혈병", "암 진단", "암보험", "암 환자", "암환자", "암 치료", "암치료"],
+    "치매·요양": ["치매", "요양"], "산정특례": ["산정특례"], "로봇수술": ["로봇수술", "로봇 수술"],
+    "CAR-T": ["car-t"], "고지의무": ["고지의무"], "자동차보험": ["자동차보험", "車보험", "차보험"],
+    "손해율": ["손해율"], "절판": ["절판"], "리모델링": ["리모델링"], "유병자": ["유병자"],
+    "도수치료": ["도수"], "백내장": ["백내장"], "수술비": ["수술비"],
+    "치료비": ["치료비", "진료비", "병원비", "의료비"], "건강보험": ["건강보험", "건보"],
+    "약가": ["약가"], "희귀질환": ["희귀"], "보험사기": ["보험사기"], "태아보험": ["태아"],
+    "운전자보험": ["운전자보험"], "본인부담": ["본인부담"],
+}
+
+
+def trend_labels(title):
+    t = title.lower()
+    return [label for label, kws in TREND_KEYWORDS.items() if any(k in t for k in kws)]
+
+
+def top_keywords(history, today, days=30, n=5):
+    """history({날짜: [기사 제목]})에서 최근 days일 안에 가장 많은 기사가 언급한 키워드 TOP n -> [(키워드, 기사 수)]"""
+    since = (today - timedelta(days=days - 1)).isoformat()
+    cnt = {}
+    for d, titles in history.items():
+        if d >= since:
+            for t in titles:
+                for label in trend_labels(t):
+                    cnt[label] = cnt.get(label, 0) + 1
+    return sorted(cnt.items(), key=lambda kv: (-kv[1], kv[0]))[:n]
+
+
+def update_keyword_history(data):
+    """오늘 게재 기사 제목을 이력에 합치고(같은 날 재실행 시 합집합) 최근 30일 빈출 키워드 TOP 5를 반환.
+    청원은 며칠씩 반복 노출돼 빈도를 부풀리므로, 유튜브와 함께 집계에서 제외한다."""
+    today = datetime.now().date()
+    try:
+        with open(KEYWORD_HISTORY_FILE, "r", encoding="utf-8") as f:
+            history = json.load(f)
+    except Exception:
+        history = {}
+    titles = [it["title"] for cid, items in data.items()
+              if cid not in ("youtube", "threads_trend", "assembly_petition") for it in items]
+    key = today.isoformat()
+    history[key] = sorted(set(history.get(key, [])) | set(titles))
+    keep_since = (today - timedelta(days=KEYWORD_HISTORY_DAYS)).isoformat()
+    history = {d: t for d, t in history.items() if d >= keep_since}
+    if not DRY_RUN:
+        try:
+            os.makedirs(os.path.dirname(KEYWORD_HISTORY_FILE), exist_ok=True)
+            with open(KEYWORD_HISTORY_FILE, "w", encoding="utf-8") as f:
+                json.dump(history, f, ensure_ascii=False, indent=1, sort_keys=True)
+        except Exception as e:
+            print(f"[경고] 키워드 이력 저장 실패(브리핑은 계속 진행): {e}")
+    return top_keywords(history, today)
+
+
+def build_trend_html(trend_top):
+    if not trend_top:
+        return ""
+    chips = "".join(f"<li><b>{i}</b>{label}<em>{cnt}</em></li>" for i, (label, cnt) in enumerate(trend_top, 1))
+    return f'<div class="trend-radar"><span class="trend-title">📈 최근 30일 빈출 키워드</span><ol class="trend-list">{chips}</ol></div>'
+
 
 def build_mail_text(data, today_str, notion_url=None):
     # 메일 발송용 텍스트 브리핑 템플릿 가공
@@ -2162,8 +2306,9 @@ def build_mail_text(data, today_str, notion_url=None):
     
     return "\n".join(lines)
 
-def build_html_card_news(data, today_str, mail_text, notion_url=None):
+def build_html_card_news(data, today_str, mail_text, notion_url=None, trend_top=None):
     # HTML 카드뉴스 빌드 함수
+    trend_html = build_trend_html(trend_top)
     card_elements = []
     
     for cat_id, info in CATEGORIES.items():
@@ -2612,6 +2757,37 @@ def build_html_card_news(data, today_str, mail_text, notion_url=None):
             text-decoration: underline;
         }
 
+        /* 금감원 공식 카드: 왼쪽 강조선 색으로 구분 */
+        .card[data-category="fss_official"]::before {
+            background-color: #6366f1;
+        }
+
+        /* 이달의 빈출 키워드 미니 티커 */
+        .trend-radar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: -0.75rem 0 1.25rem;
+            padding: 0.6rem 1rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            box-shadow: var(--shadow-sm);
+            overflow-x: auto;
+            white-space: nowrap;
+            scrollbar-width: none;
+        }
+        .trend-radar::-webkit-scrollbar { display: none; }
+        .trend-title { font-size: 0.8rem; font-weight: 800; color: var(--text-sub); flex-shrink: 0; }
+        .trend-list { display: flex; gap: 8px; list-style: none; }
+        .trend-list li {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 0.85rem; font-weight: 700; color: var(--text-main);
+            background: var(--glow); border-radius: 50px; padding: 4px 12px;
+        }
+        .trend-list b { color: var(--accent-primary); font-weight: 800; }
+        .trend-list em { font-style: normal; font-size: 0.75rem; font-weight: 600; color: var(--text-muted); }
+
         .no-data {
             grid-column: 1 / -1;
             text-align: center;
@@ -2761,10 +2937,13 @@ def build_html_card_news(data, today_str, mail_text, notion_url=None):
             </p>
         </div>
 
+        $TREND_RADAR
+
         <!-- Categories Navigation Tabs -->
         <div class="tabs-container">
             <div class="tabs">
                 <button class="tab-btn active" onclick="filterCategory('all', this)">전체보기</button>
+                <button class="tab-btn" onclick="filterCategory('fss_official', this)">금감원 공식</button>
                 <button class="tab-btn" onclick="filterCategory('policy', this)">제도·정책 이슈</button>
                 <button class="tab-btn" onclick="filterCategory('reality', this)">질병·치료비 리얼리티</button>
                 <button class="tab-btn" onclick="filterCategory('caregiving', this)">간병·돌봄 대란</button>
@@ -2901,6 +3080,7 @@ def build_html_card_news(data, today_str, mail_text, notion_url=None):
     """
     return html_template.replace("$BRIEFING_TITLE", BRIEFING_TITLE)\
                         .replace("$TODAY_STR", today_str)\
+                        .replace("$TREND_RADAR", trend_html)\
                         .replace("$CARDS_GRID", cards_grid_html)\
                         .replace("$ESCAPED_MAIL_TEXT", escaped_mail_text)\
                         .replace("$DAILY_INSIGHT", generate_daily_insight(data).replace('★ [오늘의 한마디] ', ''))\
@@ -3309,6 +3489,9 @@ def main():
     else:
         print("[DRY-RUN] 최근 URL 중복차단 이력 저장 생략")
 
+    # 1.3. 이달의 빈출 키워드 랭킹 (기사 제목 이력 누적 -> 최근 30일 TOP 5)
+    trend_top = update_keyword_history(data)
+
     # 1.5. 구글 스프레드시트 누적 저장 연동
     if not DRY_RUN:
         save_to_google_sheet(data, GOOGLE_SPREADSHEET_ID)
@@ -3328,7 +3511,7 @@ def main():
     mail_text = build_mail_text(data, today_str, notion_url)
     
     print("[정보] HTML 카드뉴스 브리핑 렌더링 중...")
-    html_card_news = build_html_card_news(data, today_str, mail_text, notion_url)
+    html_card_news = build_html_card_news(data, today_str, mail_text, notion_url, trend_top=trend_top)
     
     # 4. 파일 입출력 저장
     txt_filename = f"morning_briefing_{file_suffix}.txt"

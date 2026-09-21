@@ -145,7 +145,39 @@ finally:
     genai_mod.Client, b.time.sleep = orig_client, orig_sleep
     b._GEMINI_FAIL_STREAK[0] = 0
 
+# 6. 금감원 게시판 파싱·필터·화법 (실제 목록 HTML 구조 그대로)
+SAMPLE = """<tbody>
+<tr><td class="num"> 20880 </td><td class="title"><a href="/fss/bbs/B0000188/view.do?nttId=230052&menuNo=200218&pageIndex=1">풍성해야 할 한가위, ‘가짜 투자’에 눈물 흘리지 않으려면「</a></td><td>민생침해대응총괄국</td><td> 2026-09-21 </td><td>x</td></tr>
+<tr><td class="num"> 20879 </td><td class="title"><a href="/fss/bbs/B0000188/view.do?nttId=230051&menuNo=200218&pageIndex=1">무료 강연, 박람회에서 보험 가입 시 소비자 유의사항</a></td><td>소비자피해예방국</td><td> 2026-09-21 </td><td>x</td></tr>
+<tr><td class="num"> 20870 </td><td class="title"><a href="/fss/bbs/B0000188/view.do?nttId=229239&menuNo=200218&pageIndex=1">2026년 제49회 보험계리사 및 손해사정사 최종 합격자 발표</a></td><td>보험감독국</td><td> 2026-09-18 </td><td>x</td></tr>
+</tbody>"""
+rows = b.parse_fss_board(SAMPLE)
+if len(rows) != 3 or rows[1] != ("230051", "무료 강연, 박람회에서 보험 가입 시 소비자 유의사항", "소비자피해예방국", "2026-09-21"):
+    fails.append(f"금감원: 목록 파싱 실패 {rows}")
+elif rows[0][1].endswith("「"):
+    fails.append(f"금감원: 제목 끝 여는 괄호 미제거 {rows[0][1]}")
+else:
+    keep = [b.fss_relevant(r[1]) for r in rows]
+    if keep != [False, True, False]:
+        fails.append(f"금감원: 관련성 필터 오류(가짜투자/보험가입유의/계리사합격 = F,T,F 기대) {keep}")
+if "유의사항" not in b.fss_hook(rows[1][1], "보도자료") or "소비자경보" not in b.fss_hook("보험 사칭 주의", "소비자경보"):
+    fails.append("금감원: 화법 분기 오류")
+
+# 7. 빈출 키워드: 라벨 매칭 + 최근 30일 창 계산 (경계일 포함, 30일 초과분 제외)
+lbl = b.trend_labels("소세포폐암 신약 급여 적용 …간병비 급증, CAR-T 치료제")
+if not {"암", "신약", "급여 적용", "간병", "CAR-T"} <= set(lbl) or "치매·요양" in lbl:
+    fails.append(f"키워드: 라벨 매칭 오류 {lbl}")
+from datetime import date
+hist = {"2026-09-21": ["신약 급여 적용"], "2026-08-23": ["간병비 폭증"], "2026-08-22": ["간병 지옥", "간병 파산"]}
+top = b.top_keywords(hist, date(2026, 9, 21), days=30, n=5)
+if ("간병", 1) not in top or any(k == "간병" and c > 1 for k, c in top):
+    fails.append(f"키워드: 30일 창 경계 오류(8/23은 포함, 8/22는 제외) {top}")
+if top[0] != ("간병", 1) or top[1][0] != "급여 적용":
+    fails.append(f"키워드: 정렬(건수 내림차순, 동률은 가나다순) 오류 {top}")
+if b.build_trend_html([]) != "" or "<b>1</b>암<em>50</em>" not in b.build_trend_html([("암", 50)]):
+    fails.append("키워드: 티커 HTML 오류")
+
 if fails:
     print("\n".join(["[FAIL] " + f for f in fails]))
     sys.exit(1)
-print(f"[OK] 채택 {len(MUST_ADOPT)}건 · 차단 {len(MUST_REJECT)}건 · 화법/유튜브/Gemini 재시도 검증 통과")
+print(f"[OK] 채택 {len(MUST_ADOPT)}건 · 차단 {len(MUST_REJECT)}건 · 화법/유튜브/Gemini 재시도/금감원/빈출 키워드 검증 통과")

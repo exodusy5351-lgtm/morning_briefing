@@ -34,7 +34,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add index.html data/threads_hot.json recent_published_urls.json
+          git add index.html data/threads_hot.json data/keyword_history.json recent_published_urls.json
           if git diff --staged --quiet; then
             echo "### 변경사항 없음 — 커밋 생략" >> "$GITHUB_STEP_SUMMARY"
             echo "::warning::오늘자 브리핑 콘텐츠에 변경사항이 없어 커밋을 건너뛰었습니다. 수집 단계가 실패했을 가능성을 확인하세요."
