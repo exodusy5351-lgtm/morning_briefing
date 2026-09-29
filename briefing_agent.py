@@ -1277,10 +1277,24 @@ def fetch_category_news(cat_id, info, limit=8):
     context = ssl._create_unverified_context()
     
     try:
+        # 구글 뉴스 RSS의 일시적 503/타임아웃에 재시도 없이 카테고리 전체가 통째로 유실되던 문제 보완
+        # (2026-09-30 09개 테마 전부 503으로 실패, 브리핑이 청원·유튜브 3건만 남았던 실제 사고)
         req = urllib.request.Request(url, headers=HEADERS)
-        with urllib.request.urlopen(req, timeout=15, context=context) as response:
-            xml_data = response.read()
-        
+        xml_data = None
+        last_err = None
+        for attempt in range(3):
+            try:
+                with urllib.request.urlopen(req, timeout=15, context=context) as response:
+                    xml_data = response.read()
+                break
+            except Exception as e:
+                last_err = e
+                if attempt < 2:
+                    print(f"      [{info['label']}] RSS 요청 실패({e}) -> {attempt + 1}회차 재시도")
+                    time.sleep(2 * (attempt + 1))
+        if xml_data is None:
+            raise last_err
+
         root = ET.fromstring(xml_data)
         items = []
         

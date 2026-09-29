@@ -4,6 +4,7 @@
 import contextlib
 import io
 import sys
+import urllib.error
 
 sys.argv = [sys.argv[0], "--dry-run", "--no-gemini"]
 with contextlib.redirect_stdout(io.StringIO()):
@@ -235,7 +236,56 @@ for t in ["실손보험 4세대 전환 앞두고 경기도 소재 병원 비급�
     if b.is_local_gov_news(t):
         fails.append(f"지자체: 일반 기사를 지자체 기사로 오판 {t}")
 
+# 11. 구글 뉴스 RSS 일시적 실패(503) 재시도: 첫 시도 실패 -> 재시도 성공하면 카테고리가 유실되지 않아야 함
+_RSS_XML = ('<?xml version="1.0"?><rss><channel><item><title>테스트 기사 - 실손</title>'
+            '<link>https://news.google.com/rss/articles/x</link>'
+            '<pubDate>Wed, 30 Sep 2026 01:00:00 GMT</pubDate>'
+            '<source url="https://t">t</source></item></channel></rss>').encode("utf-8")
+
+class _FlakyResp:
+    def __init__(self, data):
+        self._data = data
+    def read(self):
+        return self._data
+    def __enter__(self):
+        return self
+    def __exit__(self, *a):
+        return False
+
+_calls = {"n": 0}
+
+def _flaky_urlopen(req, timeout=None, context=None):
+    _calls["n"] += 1
+    if _calls["n"] == 1:
+        raise urllib.error.HTTPError(req.full_url, 503, "Service Unavailable", None, None)
+    return _FlakyResp(_RSS_XML)
+
+_orig_urlopen, _orig_sleep = b.urllib.request.urlopen, b.time.sleep
+b.urllib.request.urlopen, b.time.sleep = _flaky_urlopen, (lambda s: None)
+try:
+    with contextlib.redirect_stdout(io.StringIO()):
+        result = b.fetch_category_news("silson", b.CATEGORIES["silson"], limit=5)
+    if _calls["n"] < 2:
+        fails.append(f"RSS 재시도: 재시도가 실제로 일어나지 않음 (호출 {_calls['n']}회)")
+finally:
+    b.urllib.request.urlopen, b.time.sleep = _orig_urlopen, _orig_sleep
+
+_calls["n"] = -100  # 항상 503
+
+def _always_fail(req, timeout=None, context=None):
+    raise urllib.error.HTTPError(req.full_url, 503, "Service Unavailable", None, None)
+
+_orig_urlopen, _orig_sleep = b.urllib.request.urlopen, b.time.sleep
+b.urllib.request.urlopen, b.time.sleep = _always_fail, (lambda s: None)
+try:
+    with contextlib.redirect_stdout(io.StringIO()):
+        result2 = b.fetch_category_news("silson", b.CATEGORIES["silson"], limit=5)
+    if result2 != []:
+        fails.append(f"RSS 재시도: 계속 실패하는데도 빈 리스트를 반환하지 않음 {result2}")
+finally:
+    b.urllib.request.urlopen, b.time.sleep = _orig_urlopen, _orig_sleep
+
 if fails:
     print("\n".join(["[FAIL] " + f for f in fails]))
     sys.exit(1)
-print(f"[OK] 채택 {len(MUST_ADOPT)}건 · 차단 {len(MUST_REJECT)}건 · 화법/유튜브/Gemini 재시도/금감원/공식자료 중복/타사 홍보/지자체/빈출 키워드 검증 통과")
+print(f"[OK] 채택 {len(MUST_ADOPT)}건 · 차단 {len(MUST_REJECT)}건 · 화법/유튜브/Gemini 재시도/금감원/공식자료 중복/타사 홍보/지자체/RSS재시도/빈출 키워드 검증 통과")
